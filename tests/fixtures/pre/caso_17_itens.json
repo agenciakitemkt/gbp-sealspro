@@ -1,0 +1,146 @@
+{
+ "id": "019cfc15-b4cc-7000-8000-000000000000",
+ "ncomp": 92,
+ "basic": {
+  "location_name": "Negócio Exemplo Bxxxxxxxxx",
+  "category": "Oftalmologista",
+  "is_verified": true
+ },
+ "stats": {
+  "bad_items": 5,
+  "fair_items": 1,
+  "good_items": 11,
+  "no_data_items": 0,
+  "overall_score": 67
+ },
+ "items": [
+  {
+   "id": "posts",
+   "s": 0
+  },
+  {
+   "id": "reviews_ranking_top_10",
+   "s": 0
+  },
+  {
+   "id": "reviews_ranking_average",
+   "s": 0
+  },
+  {
+   "id": "reviews_without_response",
+   "s": 0
+  },
+  {
+   "id": "description",
+   "s": 40
+  },
+  {
+   "id": "social_links",
+   "s": 50
+  },
+  {
+   "id": "location_name",
+   "s": 100
+  },
+  {
+   "id": "phone",
+   "s": 100
+  },
+  {
+   "id": "website",
+   "s": 100
+  },
+  {
+   "id": "hours",
+   "s": 100
+  },
+  {
+   "id": "reviews_quantity",
+   "s": 100
+  },
+  {
+   "id": "reviews_average",
+   "s": 100
+  },
+  {
+   "id": "logo",
+   "s": 100
+  },
+  {
+   "id": "is_verified",
+   "s": 100
+  },
+  {
+   "id": "review_growth_trend",
+   "s": 100
+  },
+  {
+   "id": "last_review_date",
+   "s": 100
+  },
+  {
+   "id": "reviews_without_text",
+   "s": 100
+  }
+ ],
+ "pd": {
+  "cid": "0000000000000000002",
+  "place_id": "",
+  "location_name": "Negócio Exemplo Bxxxxxxxxx",
+  "category": "Oftalmologista",
+  "all_categories": [
+   "Ophthalmologist"
+  ],
+  "address": "Rua Exemplo, 100, Cidade Exemplo",
+  "address_info": {
+   "city": "Cidade Exemplo"
+  },
+  "phones": [
+   "+55 00 00000-0000"
+  ],
+  "website": "https://example.com/",
+  "description": "Texto fictício de descr",
+  "hours": {
+   "Friday": "7–10 AM",
+   "Monday": "Closed",
+   "Saturday": "Closed",
+   "Sunday": "Closed",
+   "Thursday": "Closed",
+   "Tuesday": "8 AM–5 PM",
+   "Wednesday": "8 AM–5 PM"
+  },
+  "logo_url": "https://example.com/logo.jpg",
+  "cover_photo_url": "https://example.com/capa.jpg",
+  "is_verified": true,
+  "social_links": [],
+  "reviews_qty": 11,
+  "reviews_average": 5,
+  "reviews_by_stars": [
+   0,
+   0,
+   0,
+   0,
+   11
+  ],
+  "last_review_days_ago": 3,
+  "reviews_statistics": {
+   "total_reviews": 11,
+   "not_answered": 11,
+   "answered": 0,
+   "reviews_with_text": 10,
+   "reviews_without_text": 1,
+   "avg_rating": 5,
+   "last_fixed_n": 5,
+   "last_fixed_statistics": {
+    "total_reviews": 5,
+    "avg_rating": 5
+   }
+  },
+  "media_statistics": null,
+  "total_photos": 1,
+  "posts_count": 0,
+  "last_post_days_ago": null,
+  "avg_reviews_count_all": 157,
+  "is_location_on_top_10": false
+ }
+}

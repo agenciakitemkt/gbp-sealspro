@@ -1,0 +1,10 @@
+{# Menu "Ações" da tela de resultado. Espera `pdf` (link do PDF, sem o modo) e `sim` (link do simulador). Os avisos
+   sobre a analise ficam so na tela: o PDF sai direto, sem pop-up e sem aviso impresso. #}
+<details class="menu">
+  <summary class="btn btn-secondary">Ações</summary>
+  <ul class="menu-list">
+    <li><a href="{{ pdf }}">Baixar PDF completo<small>Nota, itens e o que fazer em cada um</small></a></li>
+    <li><a href="{{ pdf }}&amp;modo=resumo">Baixar PDF resumido<small>Só a nota e os itens, sem orientação</small></a></li>
+    <li><a href="{{ sim }}">Simulador de avaliações<small>Quantas avaliações faltam para subir a nota</small></a></li>
+  </ul>
+</details>

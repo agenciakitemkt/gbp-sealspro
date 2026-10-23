@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% from "_rk_macros.html" import n %}
+{% macro km(m) %}{{ (m / 1000)|round(2)|string|replace(".0", "")|replace(".", ",") }} km{% endmacro %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Análise de Ranking <span class="brand-sub">SealsPro</span></div>
+  <div class="tools"><a class="btn btn-secondary" href="/ranking?local={{ first.location_id|urlencode }}">Voltar ao ranking</a></div>
+</header>
+<main class="rk-main" id="rk-lote" data-id="{{ batch_id }}">
+  <section class="head"><div>
+    <h1>{{ local.title if local else first.name }}</h1>
+    <p class="muted">{{ items|length }} palavras-chave · grade {{ first.grid_size }}×{{ first.grid_size }} · raio {{ km(first.radius_m) }} ·
+      zoom {{ km(first.view_m) }} · {{ first.created_at|local_dt }}</p>
+  </div></section>
+
+  {% if start and ext_id %}
+  <section class="card rk-steps">
+    <h2>Iniciar no Google Maps</h2>
+    <p id="rk-start-msg" role="status">A extensão abre o perfil no Maps e roda as {{ items|length }} palavras em sequência, na mesma aba. Esta tela acompanha sozinha.</p>
+    <div class="form-actions"><button class="btn" type="button" id="rk-start">Iniciar agora</button></div>
+  </section>
+  {% with start_id=start.id, clean_url="/ranking/lote?id=" ~ batch_id %}{% include "_rk_start.html" %}{% endwith %}
+  {% endif %}
+
+  <section class="card">
+    <h2>Palavras-chave</h2>
+    <div class="table-wrap"><table class="history">
+      <thead><tr><th>Palavra-chave</th><th>Situação</th><th class="num">Encontrado</th><th class="num">No top 3</th>
+        <th class="num">ARP</th><th class="num">ATRP</th><th></th></tr></thead>
+      <tbody>
+      {% for r in items %}{% set o = r.result.own if r.result else none %}
+        <tr>
+          <td><strong>{{ r.keyword }}</strong></td>
+          <td>{% if r.shown == "coletando" %}Coletando ({{ r.received }} de {{ r.points|length - r.disabled|length }}){% else %}{{ labels.get(r.shown, r.shown) }}{% endif %}
+            {% if r.error and r.shown in ("erro", "cancelada") %}<br><small class="muted">{{ r.error }}</small>{% endif %}</td>
+          <td class="num">{% if o %}{{ o.found }} de {{ o.points }}{% else %}–{% endif %}</td>
+          <td class="num">{% if o %}{{ n(o.solv) }}%{% else %}–{% endif %}</td>
+          <td class="num">{{ n(o.arp) if o else "–" }}</td>
+          <td class="num">{{ n(o.atrp) if o else "–" }}</td>
+          <td><a href="/ranking/analise?id={{ r.id }}">abrir</a></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    {% if ready|length >= 2 %}
+    <p class="rk-help">Melhor resultado: <strong>“{{ ready[0].keyword }}”</strong> (mais pontos no top 3; no empate, a menor posição geral).
+      Abra cada palavra para ver o mapa, os concorrentes e baixar o PDF.</p>
+    {% endif %}
+  </section>
+
+  {% if not running %}
+  <form method="post" action="/ranking/lote/repetir?id={{ batch_id }}" class="rk-repeat">
+    <button class="btn" type="submit">Repetir as {{ items|length }} palavras</button>
+    <span class="muted">Mesma grade, raio e zoom; a extensão começa sozinha.</span>
+  </form>
+  {% endif %}
+
+  {% if running %}
+  <script>
+    // Acompanha o lote: recarrega quando a situacao de alguma palavra muda (ou quando chega um ponto novo).
+    (function () {
+      var id = document.getElementById("rk-lote").dataset.id, last = null;
+      setInterval(function () {
+        fetch("/ranking/lote/status?id=" + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (s) {
+          var key = JSON.stringify(s.items);
+          if (last !== null && key !== last) location.reload();
+          last = key;
+        }).catch(function () {});
+      }, 2500);
+    })();
+  </script>
+  {% endif %}
+</main>
+{% endblock %}

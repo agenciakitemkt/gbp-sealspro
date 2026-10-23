@@ -1,0 +1,182 @@
+{# PDF comparativo (antes e depois) de duas analises da Completa, para o cliente final. A4, so arquivos locais.
+   Por item, so o status antes e depois, a situacao de agora e o que mudou: nunca a nota do item nem como foi feito.
+   O bloco das fotos de clientes (parte do cliente) aparece em destaque enquanto o item nao estiver bom. #}
+{% set kicker = "Evolução do perfil no Google" %}{% set date_label = r.date_label %}
+{% from "_pdf_macros.html" import icon, gauge_svg, chart_svg %}
+{% macro change(i) -%}
+<span class="badge st-{{ i.before }}">{{ icon(i.before) }}{{ i.before_name }}</span><span class="arrow" aria-label="passou para">→</span><span class="badge st-{{ i.after }}">{{ icon(i.after) }}{{ i.after_name }}</span>
+{%- endmacro %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{{ kicker }} · {{ r.location.name }}</title>
+{% include "_estilo.html" %}
+<style>
+.duo { display: grid; grid-template-columns: 1fr 34mm 1fr; align-items: center; gap: 4mm; }
+.duo .gauge { width: 62mm; }
+.duo .when { font: 500 10pt "Space Grotesk", sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); }
+.duo .when small { display: block; letter-spacing: 0; text-transform: none; color: var(--muted); font: 400 9pt Inter, sans-serif; }
+.duo .score { font-size: 32pt; }
+.delta { text-align: center; }
+.delta strong { display: block; font: 700 26pt/1 "Space Grotesk", sans-serif; color: var(--c); }
+.delta span { font-size: 9pt; color: var(--muted); }
+.counters-duo { margin-top: 7mm; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; }
+.counters-duo .counter { grid-template-columns: 1fr; gap: 1mm; }
+.counters-duo .counter strong { font-size: 18pt; }
+.counters-duo .counter strong em { font-style: normal; color: var(--muted); font-weight: 500; }
+.nums { width: 100%; border-collapse: separate; border-spacing: 0 1.6mm; margin-top: 2mm; }
+.nums th, .nums td { padding: 2.4mm 4mm; background: var(--surface); text-align: right; }
+.nums th { text-align: left; font-weight: 600; border-radius: 2.5mm 0 0 2.5mm; }
+.nums td:last-child { border-radius: 0 2.5mm 2.5mm 0; font-weight: 700; }
+.nums thead th, .nums thead td { background: none; font-size: 8pt; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 400; padding-top: 0; padding-bottom: 0; }
+.nums .t-good { color: var(--good); } .nums .t-bad { color: var(--bad); } .nums .t-same { color: var(--muted); }
+.numbers { margin-top: 8mm; break-inside: avoid; }
+.items { break-before: page; }
+.item-head .chg { display: inline-flex; align-items: center; gap: 1.5mm; }
+.arrow { color: var(--muted); font-weight: 700; }
+.kept { margin-top: 6mm; padding: 3.5mm 5mm; border-radius: 3mm; background: #0F1A14; border: .3mm solid #1F3A2A; break-inside: avoid; }
+.kept strong { color: var(--green); }
+.nums thead td:last-child { font-weight: 400; }
+.evolution { break-before: auto; break-inside: avoid; margin-top: 10mm; }
+.item .what { margin-top: 2mm; color: var(--green); font-weight: 600; }
+.item .what::before { content: "✓ "; }
+.tag { font: 700 7.5pt Inter, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: var(--green); border: .3mm solid var(--green); border-radius: 5mm; padding: .5mm 2.5mm; margin-left: 1.5mm; }
+.homework { break-before: page; break-inside: avoid; }
+.homework .box { border: .8mm solid var(--blue); border-radius: 4mm; padding: 7mm 8mm; background: #0B1820; }
+.homework .eyebrow { font: 700 9pt "Space Grotesk", sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--blue); }
+.homework h2 { color: var(--text); font-size: 22pt; line-height: 1.15; margin: 2mm 0 4mm; }
+.homework h2 em { font-style: normal; color: var(--blue); }
+.homework .why { font-size: 11.5pt; line-height: 1.55; }
+.homework .meter { margin: 5mm 0; display: flex; gap: 2.5mm; align-items: center; }
+.homework .meter i { width: 14mm; height: 14mm; border-radius: 3mm; border: .5mm dashed var(--blue); }
+.homework .meter i.on { background: var(--blue); border-style: solid; }
+.homework .meter span { margin-left: 2mm; font-size: 10pt; color: var(--muted); }
+.homework ul { margin: 4mm 0 0 0; padding: 0; list-style: none; }
+.homework li { position: relative; padding: 2.4mm 0 2.4mm 8mm; border-top: .3mm solid #1E3442; font-size: 10.5pt; line-height: 1.5; }
+.homework li::before { content: "→"; position: absolute; left: 0; color: var(--blue); font-weight: 700; }
+.homework li strong { color: var(--text); }
+.share { margin-top: 6mm; display: grid; gap: 3mm; }
+.share .link { display: block; padding: 3.5mm 4mm; border-radius: 3mm; background: var(--surface); border: .3mm solid var(--line); font-size: 9pt; color: var(--blue); word-break: break-all; text-decoration: none; }
+.share .link small { display: block; color: var(--muted); font-size: 8pt; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 1mm; }
+.share .wa { display: inline-block; justify-self: start; padding: 3.5mm 7mm; border-radius: 6mm; background: var(--green); color: #0B0B0D; font: 700 11pt Inter, sans-serif; text-decoration: none; }
+.share .msg { font-size: 9pt; color: var(--muted); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <img class="cover-logo" src="{{ a.logo }}" alt="SealsPro">
+  <div class="cover-main">
+    <p class="kicker">{{ kicker }}</p>
+    <h1>{{ r.location.name }}</h1>
+    <p class="cover-meta">{{ r.location.category }}{% if r.location.city %} · {{ r.location.city }}{% endif %}</p>
+    <p class="cover-date">De {{ r.date_before }} a {{ r.date_after }}</p>
+  </div>
+  <img class="cover-symbol" src="{{ a.symbol }}" alt="">
+  <p class="cover-by">Preparado pela SealsPro</p>
+</section>
+
+<section class="summary">
+  <h2>Antes e depois</h2>
+  <div class="duo">
+    {% for side, label, day in (("before", "Antes", r.date_before), ("after", "Depois", r.date_after)) %}{% set o = r[side] %}
+    {% if side == "after" %}
+    <div class="delta st-{{ 'good' if r.delta > 0 else 'bad' if r.delta < 0 else 'fair' }}">
+      <strong>{% if r.delta > 0 %}+{{ r.delta }}{% elif r.delta < 0 %}−{{ -r.delta }}{% else %}0{% endif %}</strong>
+      <span>{{ "ponto" if r.delta in (1, -1) else "pontos" }} na nota geral</span>
+    </div>
+    {% endif %}
+    <div class="gauge-box">
+      <p class="when">{{ label }}<small>{{ day }}</small></p>
+      {{ gauge_svg(o.score, r.bands) }}
+      <p class="score">{{ o.score }}<small> de 100</small></p>
+      <p class="score-label st-{{ o.status }}" style="color: var(--c)">{{ icon(o.status) }} {{ o.status_name }}</p>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="counters-duo">
+    {% for key, name, help in (("bad", "Fraco", "precisam de atenção"), ("fair", "Razoável", "podem melhorar"), ("good", "Bom", "estão em ótimo estado")) %}
+    <div class="counter st-{{ key }}"><span class="name">{{ icon(key) }} {{ name }}</span>
+      <strong>{{ r.before.counts[key] }} <em>→</em> {{ r.after.counts[key] }}</strong><span class="help">itens que {{ help }}</span></div>
+    {% endfor %}
+  </div>
+  <p class="lead"><strong>{{ r.sentence_1 }}</strong> {{ r.sentence_2 }}</p>
+
+  {% if r.numbers %}
+  <div class="numbers">
+    <h3>Números do perfil</h3>
+    <table class="nums">
+      <thead><tr><th></th><td>Antes</td><td>Depois</td><td>Diferença</td></tr></thead>
+      <tbody>
+      {% for n in r.numbers %}
+      <tr><th>{{ n.label }}</th><td>{{ n.before }}</td><td>{{ n.after }}</td><td class="t-{{ n.trend }}">{{ n.delta }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  <p class="footnote">* Critérios próprios da SealsPro. As duas análises foram avaliadas com os mesmos critérios, para a comparação ser justa. A nota vai de 0 a 100 e resume o estado dos itens avaliados: cada item recebe o status Bom, Razoável ou Fraco.</p>
+</section>
+
+{% set cp = r.customer_photos %}
+{% if cp %}
+<section class="homework">
+  <div class="box">
+    <p class="eyebrow">Sua parte · só você pode fazer</p>
+    <h2>Faltam <em>{{ cp.missing }} {{ "avaliação nova" if cp.missing == 1 else "avaliações novas" }} com foto</em> de clientes</h2>
+    <p class="why">Fotos enviadas por clientes mostram ao Google e a quem pesquisa que o negócio é real e bem avaliado. Esse é o único ponto do perfil que a agência não consegue resolver: a foto precisa vir de quem avalia.</p>
+    <div class="meter">{% for n in range(cp.recommended) %}<i class="{{ 'on' if n < cp.current }}"></i>{% endfor %}
+      <span>{{ cp.current }} de {{ cp.recommended }} recomendadas</span></div>
+    <ul>
+      <li><strong>Vale qualquer foto.</strong> O ambiente, a fachada, um produto, o resultado do serviço. Não precisa aparecer o rosto de ninguém.</li>
+      <li><strong>Família e amigos também podem avaliar</strong> e mandar uma foto junto. Atenção: se o Google identificar que a avaliação é de um familiar ou amigo, ele pode removê-la. Vale testar, mas priorize clientes de verdade.</li>
+      <li><strong>A foto precisa ir junto com uma avaliação nova.</strong> Acrescentar foto numa avaliação que já foi publicada não conta: são {{ cp.missing }} {{ "avaliação inédita" if cp.missing == 1 else "avaliações inéditas" }}, cada uma com pelo menos uma foto.</li>
+      <li><strong>Peça logo depois do atendimento</strong>, quando a experiência ainda está fresca.</li>
+    </ul>
+    {% if cp.link %}
+    <div class="share">
+      <a class="link" href="{{ cp.link }}"><small>Link para avaliar</small>{{ cp.link }}</a>
+      <a class="wa" href="{{ cp.whatsapp }}">Compartilhar no WhatsApp</a>
+      <p class="msg">Mensagem que vai junto: “{{ cp.message }}”</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% set it = r["items"] %}
+<section class="items">
+  <h2>O que mudou nos itens</h2>
+  {% if not it.improved and not it.worsened %}<p class="intro">Nenhum item mudou entre as duas análises.</p>{% endif %}
+
+  {% for key, status, name, help in (("improved", "good", "Melhoraram", "subiram de faixa ou foram trabalhados"), ("worsened", "bad", "Pontos de atenção", "caíram de faixa"), ("still_low", "fair", "Ainda podem melhorar", "seguem na mesma faixa")) %}
+  {% if it[key] %}
+  <div class="group st-{{ status }}">{{ icon(status) }}<h3>{{ name }}</h3><span class="n">{{ it[key] | length }} {{ "item" if it[key] | length == 1 else "itens" }} · {{ help }}</span></div>
+  {% for i in it[key] %}
+  <article class="item st-{{ i.after }}">
+    <div class="item-head"><h3>{{ i.title }}</h3>{% if key == "still_low" or (key == "improved" and not i.rose) %}<span class="chg"><span class="badge">{{ icon(i.after) }}{{ i.after_name }}</span>{% if key == "improved" %}<span class="tag">Atualizado</span>{% endif %}</span>{% else %}<span class="chg">{{ change(i) }}</span>{% endif %}</div>
+    {% if i.change %}<p class="what">{{ i.change }}</p>{% endif %}
+    <p class="sit">{{ i.situation }}</p>
+  </article>
+  {% endfor %}
+  {% endif %}
+  {% endfor %}
+
+  {% if it.still_good %}
+  <div class="kept"><p><strong>{{ it.still_good | length }} {{ "item já estava bom e continuou" if it.still_good | length == 1 else "itens já estavam bons e continuaram" }} assim:</strong>
+    {{ it.still_good | map(attribute="title") | join(", ") }}.</p></div>
+  {% endif %}
+</section>
+
+{% if r.evolution %}
+<section class="evolution">
+  <h2>Evolução da nota</h2>
+  <p>{{ r.evolution.sentence }}</p>
+  {{ chart_svg(r.evolution.chart) }}
+  <p class="small muted" style="margin-top: 3mm">{{ r.evolution.count }} análises entre {{ r.date_before }} e {{ r.date_after }}, feitas com os mesmos critérios de avaliação.</p>
+</section>
+{% endif %}
+
+</body>
+</html>

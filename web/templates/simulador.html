@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{# Nome do local vem do Google e nao e confiavel: so interpolacao com autoescape. #}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Simulador de avaliações <span class="brand-sub">SealsPro</span></div>
+  <div class="tools"><a class="btn btn-secondary" href="{{ voltar }}">Voltar para a análise</a></div>
+</header>
+<main id="sim">
+  <section class="head">
+    <div>
+      <h1>{{ loc.name or "(sem nome)" }}</h1>
+      {% if s %}<p class="muted">{{ s.total }} avaliaç{{ "ão" if s.total == 1 else "ões" }} · nota no Google {{ s.current }} ★ · faixa {{ s.zone.name }}</p>{% endif %}
+    </div>
+  </section>
+
+  {% if erro %}
+  <p class="notice" role="note">{{ icon("unavailable") }}<span>{{ erro }}</span></p>
+  {% else %}
+  <form class="sim-form" method="get" action="/simulador"
+        hx-get="/simulador" hx-trigger="change, input changed delay:400ms from:#ritmo" hx-target="#sim" hx-select="#sim"
+        hx-swap="outerHTML" hx-push-url="true">
+    {% if pre is not none %}<input type="hidden" name="pre" value="{{ pre }}">{% else %}<input type="hidden" name="local" value="{{ local }}">{% endif %}
+
+    <div class="sim-grid">
+      <section class="card sim-now zone-{{ s.zone.key }}" aria-labelledby="agora">
+        <h2 id="agora">Nota de hoje</h2>
+        <p class="sim-big">{{ s.current }} <span class="sim-star" aria-hidden="true">★</span></p>
+        <p class="sim-zone">Faixa {{ s.zone.name }}</p>
+        <p class="muted small">Média exata: {{ "%.2f"|format(s.average)|replace(".", ",") }}. O Google mostra uma casa decimal.</p>
+        <div class="sim-scale" aria-hidden="true">
+          {% for z in s.scale %}<span class="zone-{{ z.key }}" style="flex: {{ z.share }}"></span>{% endfor %}
+          <i style="left: {{ ((s.current_tenths - 10 + 0.5) / 41 * 100)|round(1) }}%"></i>
+        </div>
+        <div class="sim-scale-legend" aria-hidden="true">{% for z in s.scale %}<span style="flex: {{ z.share }}">{{ z.name }}</span>{% endfor %}</div>
+      </section>
+
+      <section class="card sim-goal" aria-labelledby="meta-titulo">
+        <h2 id="meta-titulo">Meta</h2>
+        {% if s.max %}
+        <p class="sim-big">{{ icon("good") }}</p>
+        <p><strong>A nota já está no máximo.</strong> O trabalho agora é manter: continuar pedindo avaliações e responder todas.</p>
+        {% else %}
+        <label class="sim-field">Chegar a
+          <select name="meta">
+            {% for t in s.targets %}<option value="{{ t.value }}"{% if t.value == s.target %} selected{% endif %}>{{ t.label }} ({{ t.zone }})</option>{% endfor %}
+          </select>
+        </label>
+        <p class="sim-big">{{ s.needed }}</p>
+        <p>avaliaç{{ "ão" if s.needed == 1 else "ões" }} de <strong>5 estrelas</strong> para a nota chegar a <strong>{{ s.target_label }}</strong> (faixa {{ s.target_zone }}), sem nenhuma avaliação abaixo de 5 no caminho.</p>
+        {% endif %}
+      </section>
+    </div>
+
+    {% if not s.max %}
+    <section class="card" aria-labelledby="tempo">
+      <h2 id="tempo">Em quanto tempo</h2>
+      <div class="sim-row">
+        <label class="sim-field">Avaliações de 5 estrelas
+          <input id="ritmo" type="number" name="ritmo" min="1" max="1000" value="{{ s.pace }}" inputmode="numeric">
+        </label>
+        <label class="sim-field">por
+          <select name="periodo">{% for k, n in periodos.items() %}<option value="{{ k }}"{% if k == s.period %} selected{% endif %}>{{ n }}</option>{% endfor %}</select>
+        </label>
+        <noscript><button class="btn" type="submit">Calcular</button></noscript>
+      </div>
+      <div class="sim-paces" role="group" aria-label="Ritmos prontos">
+        {% set base = ("pre=" ~ pre) if pre is not none else ("local=" ~ (local|urlencode)) %}
+        {% for p in s.paces %}{% set url = "/simulador?" ~ base ~ "&meta=" ~ s.target ~ "&ritmo=" ~ p.pace ~ "&periodo=" ~ s.period %}
+        <a href="{{ url }}" hx-get="{{ url }}" hx-target="#sim" hx-select="#sim" hx-swap="outerHTML" hx-push-url="true"
+           class="sim-pace{% if p.active %} active{% endif %}"{% if p.active %} aria-current="true"{% endif %}>
+          <strong>{{ p.name }}</strong><span>{{ p.pace }} por {{ s.period_name }}</span>{% if p.duration %}<em>{{ p.duration }}</em>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% if s.plan %}
+      <p class="sim-plan">Recebendo <strong>{{ s.pace }}</strong> avaliaç{{ "ão" if s.pace == 1 else "ões" }} de 5 estrelas por {{ s.period_name }}, a nota chega a <strong>{{ s.target_label }}</strong> em cerca de <strong>{{ s.plan.duration }}</strong> ({{ s.plan.days }} dias), por volta de <strong>{{ s.plan.date }}</strong>.</p>
+      {% else %}
+      <p class="sim-plan">A meta escolhida já foi alcançada.</p>
+      {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="subir">
+      <h2 id="subir">Para subir de faixa</h2>
+      <ul class="sim-cards">
+        {% for g in s.growth %}
+        <li><span class="sim-num">{{ g.needed }}</span><span>avaliaç{{ "ão" if g.needed == 1 else "ões" }} de 5 estrelas para chegar a <strong>{{ g.target }}</strong> ({{ g.zone }})</span></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <section class="card" aria-labelledby="risco">
+      <h2 id="risco">Risco de queda</h2>
+      {% if s.risk %}
+      <p class="muted">Quantas avaliações ruins seguidas, sem nenhuma boa no meio, fariam a nota sair da faixa {{ s.zone.name }}.</p>
+      <ul class="sim-cards risk">
+        {% for x in s.risk %}
+        <li><span class="sim-num">{{ x.count }}</span><span>{{ x.label|lower }} levam a nota para <strong>{{ x.after }}</strong> ({{ x.zone }})</span></li>
+        {% endfor %}
+      </ul>
+      {% elif s.lower_zone %}
+      <p class="muted">Nenhum dos cenários consegue tirar a nota da faixa atual.</p>
+      {% else %}
+      <p class="muted">A nota já está na faixa mais baixa.</p>
+      {% endif %}
+    </section>
+
+    <section class="card" aria-labelledby="faixas">
+      <h2 id="faixas">Faixas de nota</h2>
+      <ul class="sim-zones">
+        {% for z in s.scale|reverse %}
+        <li class="zone-{{ z.key }}{% if z.current %} current{% endif %}"><span class="dot" aria-hidden="true"></span>{{ z.name }}{% if z.current %} <em>(hoje)</em>{% endif %}<span class="range">{{ z.range }}</span></li>
+        {% endfor %}
+      </ul>
+    </section>
+  </form>
+  {% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% from "_macros.html" import icon %}
+{# Botao + andamento da sincronizacao. Enquanto roda, consulta /sincronizar/status a cada segundo. #}
+{% set running = sync.status == "running" %}
+<div id="sync" class="sync"
+     {% if running %}hx-get="/sincronizar/status" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %}>
+  <button class="btn btn-secondary" type="button" hx-post="/sincronizar" hx-target="#sync" hx-swap="outerHTML"
+          {% if running %}disabled aria-busy="true"{% endif %}>Sincronizar locais</button>
+  {% if running %}
+    <div class="sync-msg" role="status">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>{% if sync.accounts_total is none %}Buscando as contas no Google…
+        {% elif sync.accounts_done >= sync.accounts_total %}Gravando os locais…
+        {% else %}Conta {{ sync.accounts_done + 1 }} de {{ sync.accounts_total }}: buscando locais ({{ sync.locations_found }} até agora)…{% endif %}</span>
+    </div>
+    <progress class="sync-bar" max="{{ sync.accounts_total or 1 }}" {% if sync.accounts_total is not none %}value="{{ sync.accounts_done }}"{% endif %} aria-label="Andamento da sincronização"></progress>
+  {% elif sync.status == "done" %}
+    <p class="sync-msg ok" role="status">{{ icon("good") }}<span>Sincronizado: {{ sync.total }} locais ({{ sync.new }} {{ "novo" if sync.new == 1 else "novos" }}).</span></p>
+  {% elif sync.status == "error" %}
+    <p class="sync-msg err" role="alert">{{ icon("bad") }}<span>Não foi possível sincronizar: {{ sync.message }}</span></p>
+  {% endif %}
+</div>

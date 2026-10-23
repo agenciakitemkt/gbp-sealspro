@@ -1,0 +1,70 @@
+{
+  "manifest_version": 3,
+  "name": "SealsPro Pré Análise",
+  "version": "0.6.0",
+  "description": "Captura, quando você clica, os dados públicos do Google Maps (pré análise, ranking e busca de leads) e envia só para o app local da SealsPro (127.0.0.1).",
+  "minimum_chrome_version": "111",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_title": "SealsPro: capturar a pré análise deste perfil (ou use o botão Pré Análise SealsPro na página)"
+  },
+  "options_page": "options.html",
+  "externally_connectable": {
+    "matches": [
+      "http://127.0.0.1:8000/*"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.google.com/maps/*",
+        "https://www.google.com/maps?*"
+      ],
+      "js": [
+        "src/main/match.js",
+        "src/lib/hook.js",
+        "src/hook-main.js"
+      ],
+      "run_at": "document_start",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://www.google.com/maps/*",
+        "https://www.google.com/maps?*"
+      ],
+      "js": [
+        "src/lib/match.js",
+        "src/lib/buffer.js",
+        "src/lib/steps.js",
+        "src/lib/session.js",
+        "src/lib/button.js",
+        "src/lib/urls.js",
+        "src/lib/ranking.js",
+        "src/content.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.google.com/search*",
+        "https://www.google.com.br/search*"
+      ],
+      "js": [
+        "src/lib/cid.js",
+        "src/lib/button.js",
+        "src/lib/reviews-search.js",
+        "src/search.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

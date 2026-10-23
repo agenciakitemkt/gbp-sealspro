@@ -1,0 +1,33 @@
+{# Macros da Analise de Ranking: numero com virgula, grafico pequeno de uma metrica e grade de posicoes. #}
+{% macro n(v) %}{{ ("%g"|format(v))|replace(".", ",") if v is not none else "–" }}{% endmacro %}
+
+{% macro pos_class(p, unread=false) %}{% if unread %}rk-p0{% elif p is none %}rk-p4{% elif p <= 3 %}rk-p1{% elif p <= 10 %}rk-p2{% else %}rk-p3{% endif %}{% endmacro %}
+
+{% macro rk_chart(c, title) %}
+<figure class="rk-chart">
+  <figcaption>{{ title }}</figcaption>
+  <svg class="chart" viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ title }}: {% for p in c.points %}{{ n(p.value) }}{% if not loop.last %}, {% endif %}{% endfor %}">
+    {% for g in c.grid %}
+    <line class="grid" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ g.y }}" y2="{{ g.y }}"/>
+    <text class="tick" x="{{ c.left - 6 }}" y="{{ g.y + 4 }}" text-anchor="end">{{ g.label }}</text>
+    {% endfor %}
+    {% if c.n > 1 %}<polyline class="trend" points="{{ c.line }}"/>{% endif %}
+    {% for p in c.points %}
+    <circle class="pt pt-real" cx="{{ p.x }}" cy="{{ p.y }}" r="4.5"><title>{{ p.created_at|local_dt }} · {{ n(p.value) }}</title></circle>
+    <text class="pt-label" x="{{ p.x }}" y="{{ p.y - 9 if p.y - 9 > c.top else p.y + 17 }}" text-anchor="middle">{{ n(p.value) }}</text>
+    {% endfor %}
+    {% for xl in c.xlabels %}
+    <text class="tick" x="{{ xl.x }}" y="{{ c.height - 12 }}" text-anchor="middle">{{ xl.created_at|local_short }}</text>
+    {% endfor %}
+  </svg>
+</figure>
+{% endmacro %}
+
+{% macro rk_grid(size, positions, unread=[], off=[]) %}
+<div class="rk-grid" style="--n: {{ size }}">
+  {% for row in range(size - 1, -1, -1) %}{% for col in range(size) %}{% set i = row * size + col %}{% set p = positions[i] %}
+  {% if i in off %}<span class="rk-cell rk-off" title="Ponto desligado">–</span>{% else %}
+  <span class="rk-cell {{ pos_class(p, i in unread) }}">{% if i in unread %}?{% else %}{{ p if p is not none else "20+" }}{% endif %}</span>{% endif %}
+  {% endfor %}{% endfor %}
+</div>
+{% endmacro %}

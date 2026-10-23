@@ -1,0 +1,32 @@
+{
+  "engine_version": "1",
+  "fingerprint": "a16cb51ea9342447afa5ee8a3a5bd57801b6c5cd3579c48f5984ca81ef8cdd1f",
+  "files": {
+    "__init__.py": "4456af596eacc6d54968553fc4d947c82ae9e8ab4aeb12feb6e1d980ae819fac",
+    "base.py": "a3d9762df4dda70db35a7b5745340ed85d94e8904196623d4a6c442749eca995",
+    "curves.py": "fcc86454ed58018bb969b68f8a7c271e92cde82244360cb025c295ce17f24ec1",
+    "engine.py": "71f1b9cb55781cb06e031147b9c9c35984a35901d5babb2163818c500abdaa41",
+    "items/__init__.py": "755d0e7797b3aaaa27aeab4918d20dc7e3f076e588dd2ed23e9ff42f860d5886",
+    "items/business_name.py": "c94d4220afc9f2817df73659e234c5223b5461f719d52ca499d3893603e312e8",
+    "items/cover.py": "255b13169b12eea690e35ff04a522d8f9b029e2abf85f12e7c334b17cbc97735",
+    "items/customer_media.py": "3b9a5451219dac7fbe300e913aa4fb24e98fa79e32e0d720f7d2a8fb67742de0",
+    "items/description.py": "3e78a2a8f504b986666ee7a8472bcfeb897f95d0141f31957334b07160061b3f",
+    "items/founding_date.py": "5956fc8a9b7689fcea21696175cbb77c4db1a54131eff2e303847a2d3b7817f8",
+    "items/hours.py": "4e40020a1fdf15e8bcafbd6613162b34bdfa716730bf1413759589b3526f07c6",
+    "items/last_owner_media.py": "102f2b56bb9c7452c042c44b71edd43dc1b08aaddd792e81a138600349816413",
+    "items/last_post.py": "9508d6634f2235352f33701f2ccab9a6442242ef1fd3e3893c1547491ee34a43",
+    "items/logo.py": "e6c8cf76fead21d4f97ec0d3deb3084ff390870205fa341600f6195faa811f97",
+    "items/owner_media.py": "26976adeaf2a52817af6431a3f3e9807d7a8b76d1e4afc447db03e9a99a04988",
+    "items/phone.py": "115c07ef9a5ac0887a619724ab1db3fae251ba3a11917bda204ad022e16b022f",
+    "items/reviews_average.py": "05deb585fa5d956b5e071a3ffb7d6d25db2c42a4f0912e0df9507e4c7d0e0a16",
+    "items/reviews_count.py": "de711be4ab6761cba146733f1a33203ec90814fa195db36cbc2c6acc629f1787",
+    "items/reviews_no_comment.py": "552910946210e018ea73175ead11dbf676ef2f987ba0146ca6652900e2bb5698",
+    "items/reviews_trend.py": "ea9cec0902c4f2f9453171e305a73cea82a4a657477fdd280ae7b6f8554fa21c",
+    "items/reviews_unanswered.py": "c1fff9a8ed90b352d6d11b869f7f81b6e06fd9fbdc3e5f91ab903cf0eed4c985",
+    "items/services.py": "75932721186574cb801f2f54163263874aa1926c46d43744188adfc5dac43b90",
+    "items/special_hours.py": "f96fbdbd74ec2b40c058530f45932099b99bc06dd417d39aa10216215bdd71c0",
+    "items/total_media.py": "90aa9f8d9d82629f24092caf770def8519e44e6bd8b12cd628bdd2abc7f1bc61",
+    "items/videos.py": "93863afe0914365153ad829a066648c2593d18cee4749174696313ca4c874616",
+    "items/website.py": "3ccc75c1a5e1707025acc45b7c0cf1847a900300d05c13435e3439d3947c3915"
+  }
+}

@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% from "_rk_macros.html" import n, rk_chart %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Análise de Ranking <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">
+    {% include "_picker.html" %}
+    <a class="btn btn-secondary" href="/{% if atual %}?local={{ atual.id|urlencode }}{% endif %}">Análise Completa</a>
+  </div>
+</header>
+
+<main id="ranking" class="rk-main">
+{% if not atual %}
+  <section class="card empty"><h1>Nenhum local ativo</h1><p>Sincronize os locais na tela da Análise Completa.</p></section>
+{% else %}
+  <section class="head">
+    <div>
+      <h1>{{ atual.title }}</h1>
+      <p class="muted">Posição do perfil na busca do Google Maps em vários pontos em volta do negócio.</p>
+    </div>
+  </section>
+
+  {% if erro %}<p class="notice error" role="alert">{{ icon("bad") }}<span>{{ erro }}</span></p>{% endif %}
+
+  {% if reminders %}
+  <section class="card rk-due">
+    <h2>Para repetir <span class="muted">(última análise há mais de {{ cfg.REMINDER_DAYS }} dias)</span></h2>
+    <ul>
+    {% for d in reminders %}{% set r = d.last %}
+      <li>
+        <span><strong>{{ r.title }}</strong> · “{{ r.keyword }}” · {{ r.grid_size }}×{{ r.grid_size }} · {{ (r.radius_m / 1000)|string|replace(".0", "")|replace(".", ",") }} km
+          <span class="muted">· última há {{ d.days }} dias (<a href="/ranking/analise?id={{ r.id }}">#{{ r.id }}</a>)</span></span>
+        <form method="post" action="/ranking/repetir?id={{ r.id }}"><button class="btn" type="submit">Repetir</button></form>
+      </li>
+    {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="card">
+    <h2>Nova análise</h2>
+    {% if ident_erro %}
+    <p class="notice error" role="alert">{{ icon("bad") }}<span>{{ ident_erro }}</span></p>
+    {% else %}
+    <form class="rk-form" method="post" action="/ranking/nova">
+      <input type="hidden" name="local" value="{{ atual.id }}">
+      <label class="rk-field rk-kw">Palavras-chave <span class="muted">(separe por vírgula; até {{ cfg.BATCH_MAX }})</span>
+        <input name="palavra" required maxlength="{{ cfg.KEYWORD_MAX * cfg.BATCH_MAX + 20 }}" placeholder="{{ ident.category|lower if ident and ident.category else 'ex.: dentista' }}"
+               value="{{ ident.category|lower if ident and ident.category else '' }}">
+      </label>
+      <label class="rk-field">Grade
+        <select name="grade">
+          {% for n in cfg.GRID_SIZES %}<option value="{{ n }}" {% if n == cfg.DEFAULT_GRID %}selected{% endif %}>{{ n }}×{{ n }} ({{ n * n }} pontos, ~{{ ((n * n * cfg.SECONDS_PER_POINT) / 60)|round(0, "ceil")|int }} min)</option>{% endfor %}
+        </select>
+      </label>
+      <label class="rk-field">Raio
+        <select name="raio">
+          {% for m in cfg.RADIUS_OPTIONS_M %}<option value="{{ m }}" {% if m == cfg.DEFAULT_RADIUS_M %}selected{% endif %}>{{ (m / 1000)|string|replace(".0", "")|replace(".", ",") }} km</option>{% endfor %}
+        </select>
+      </label>
+      <label class="rk-field">Zoom
+        <select name="zoom">
+          {% for m, label in cfg.VIEW_OPTIONS_M.items() %}<option value="{{ m }}" {% if m == cfg.VIEW_DISTANCE_M %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="form-actions"><button class="btn" type="submit">Preparar análise</button></div>
+    </form>
+    <p class="muted rk-help">Ao preparar, a extensão SealsPro abre o perfil no Google Maps numa aba nova e faz uma busca por ponto,
+      com pausa de 1 a 2 segundos entre elas (uma grade 5×5 leva cerca de 1 minuto). No fim, a aba fecha e o resultado aparece aqui.
+      <strong>Zoom</strong> é a área do mapa vista em cada ponto: “Bairro” para segmentos com muitos concorrentes por perto;
+      “Região” ou “Cidade” para especialidades com poucos (o GBP Check se aproxima mais disso nesses casos).</p>
+    {% endif %}
+  </section>
+
+  {% for sr in evolution %}
+  <section class="card">
+    <h2>Evolução: “{{ sr.keyword }}” · {{ sr.grid_size }}×{{ sr.grid_size }} · {{ (sr.radius_m / 1000)|string|replace(".0", "")|replace(".", ",") }} km · zoom {{ cfg.VIEW_OPTIONS_M.get(sr.view_m, sr.view_m)|lower }} <span class="muted">({{ sr.analyses|length }} análises)</span></h2>
+    <div class="rk-charts">
+      {{ rk_chart(sr.charts[0], "Posição média em todos os pontos (ATRP): quanto mais alto, melhor") }}
+      {{ rk_chart(sr.charts[1], "Pontos no top 3 (SoLV, %)") }}
+    </div>
+  </section>
+  {% endfor %}
+
+  <section class="card">
+    <h2>Análises anteriores</h2>
+    {% if not rankings %}
+    <p class="muted">Nenhuma análise de ranking deste local ainda.</p>
+    {% else %}
+    <form method="get" action="/ranking/comparar">
+    <div class="table-wrap">
+    <table class="history">
+      <thead><tr>{% if ready|length >= 2 %}<th>A</th><th>B</th>{% endif %}<th>Data</th><th>Palavra-chave</th><th>Grade</th><th>Raio</th><th>Zoom</th><th>Situação</th>
+        <th class="num">Encontrado</th><th class="num">ARP</th><th class="num">ATRP</th><th class="num">SoLV</th></tr></thead>
+      <tbody>
+      {% for r in rankings %}{% set o = r.result.own if r.result else none %}
+        <tr>
+          {% if ready|length >= 2 %}
+          <td>{% if r.status == "pronta" %}<input type="radio" name="a" value="{{ r.id }}" aria-label="Usar a análise #{{ r.id }} como A (antes)" {% if r.id == ready[1].id %}checked{% endif %}>{% endif %}</td>
+          <td>{% if r.status == "pronta" %}<input type="radio" name="b" value="{{ r.id }}" aria-label="Usar a análise #{{ r.id }} como B (depois)" {% if r.id == ready[0].id %}checked{% endif %}>{% endif %}</td>
+          {% endif %}
+          <td><a href="/ranking/analise?id={{ r.id }}">{{ r.created_at|local_short }}</a> <span class="muted">#{{ r.id }}</span></td>
+          <td>{{ r.keyword }}{% if r.batch_id %} <a class="muted" href="/ranking/lote?id={{ r.batch_id }}" title="Rodada junto com outras palavras">(lote)</a>{% endif %}</td>
+          <td>{{ r.grid_size }}×{{ r.grid_size }}</td>
+          <td>{{ (r.radius_m / 1000)|string|replace(".0", "")|replace(".", ",") }} km</td>
+          <td>{{ (cfg.VIEW_OPTIONS_M.get(r.view_m, "")).split(" ")[0] or r.view_m }}</td>
+          <td>{{ labels.get(r.shown, r.shown) }}</td>
+          <td class="num">{% if o %}{{ o.found }} de {{ o.points }}{% else %}–{% endif %}</td>
+          <td class="num">{{ n(o.arp) if o else "–" }}</td>
+          <td class="num">{{ n(o.atrp) if o else "–" }}</td>
+          <td class="num">{% if o %}{{ n(o.solv) }}%{% else %}–{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if ready|length >= 2 %}
+    <p class="form-actions"><button class="btn" type="submit">Comparar as duas análises marcadas</button>
+      <button class="btn btn-secondary" type="submit" formaction="/ranking/comparativo.pdf">Baixar comparativo (PDF)</button>
+      <span class="muted">Só vale com a mesma palavra-chave, grade, raio e zoom.</span></p>
+    {% endif %}
+    </form>
+    {% endif %}
+  </section>
+{% endif %}
+</main>
+{% endblock %}

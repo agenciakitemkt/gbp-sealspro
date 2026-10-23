@@ -1,0 +1,9 @@
+# Dependencias para rodar o app (coletor, motor de nota, telas e relatorio).
+# Para rodar os testes: pip install -r requirements-dev.txt
+google-auth
+google-auth-oauthlib
+requests
+fastapi
+uvicorn
+jinja2
+pillow       # imagem das postagens (confere e regrava como JPEG); tambem usada pelos testes do PDF

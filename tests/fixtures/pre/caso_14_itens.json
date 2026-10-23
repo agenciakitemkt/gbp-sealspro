@@ -1,0 +1,122 @@
+{
+ "id": "019cb4c6-26e8-7000-8000-000000000000",
+ "ncomp": 63,
+ "basic": {
+  "location_name": "Negócio Exemplo Cxxx",
+  "category": "Consultório médico",
+  "is_verified": false
+ },
+ "stats": {
+  "bad_items": 10,
+  "fair_items": 1,
+  "good_items": 3,
+  "no_data_items": 0,
+  "overall_score": 25
+ },
+ "items": [
+  {
+   "id": "website",
+   "s": 0
+  },
+  {
+   "id": "reviews_quantity",
+   "s": 0
+  },
+  {
+   "id": "reviews_average",
+   "s": 0
+  },
+  {
+   "id": "logo",
+   "s": 0
+  },
+  {
+   "id": "posts",
+   "s": 0
+  },
+  {
+   "id": "is_verified",
+   "s": 0
+  },
+  {
+   "id": "description",
+   "s": 0
+  },
+  {
+   "id": "last_review_date",
+   "s": 0
+  },
+  {
+   "id": "reviews_ranking_top_10",
+   "s": 0
+  },
+  {
+   "id": "reviews_ranking_average",
+   "s": 0
+  },
+  {
+   "id": "social_links",
+   "s": 50
+  },
+  {
+   "id": "location_name",
+   "s": 100
+  },
+  {
+   "id": "phone",
+   "s": 100
+  },
+  {
+   "id": "hours",
+   "s": 100
+  }
+ ],
+ "pd": {
+  "cid": "0000000000000000003",
+  "place_id": "",
+  "location_name": "Negócio Exemplo Cxxx",
+  "category": "Consultório médico",
+  "all_categories": [
+   "Medical office"
+  ],
+  "address": "Rua Exemplo, 100, Cidade Exemplo",
+  "address_info": {
+   "city": "Cidade Exemplo"
+  },
+  "phones": [
+   "+55 00 00000-0000"
+  ],
+  "website": null,
+  "description": "",
+  "hours": {
+   "Friday": "7 AM–7 PM",
+   "Monday": "7 AM–7 PM",
+   "Saturday": "7 AM–12 PM",
+   "Sunday": "Closed",
+   "Thursday": "7 AM–7 PM",
+   "Tuesday": "7 AM–7 PM",
+   "Wednesday": "7 AM–7 PM"
+  },
+  "logo_url": "",
+  "cover_photo_url": "https://example.com/capa.jpg",
+  "is_verified": false,
+  "social_links": [],
+  "reviews_qty": "",
+  "reviews_average": "",
+  "reviews_by_stars": [
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "last_review_days_ago": null,
+  "reviews_statistics": null,
+  "media_statistics": null,
+  "total_photos": 1,
+  "posts_count": 0,
+  "last_post_days_ago": null,
+  "avg_reviews_count_all": 424,
+  "is_location_on_top_10": false
+ }
+}

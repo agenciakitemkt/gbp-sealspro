@@ -1,0 +1,147 @@
+{# PDF comparativo (antes e depois) de duas analises de ranking da mesma serie, para o cliente. A4; so o fundo dos
+   mapas vem da internet, ja embutido. Sem texto sobre problemas da coleta (ficam na tela). #}
+{% set kicker = "Evolução no Google Maps" %}{% set date_label = r.date_label %}
+{% macro n(v) %}{{ ("%g"|format(v|round(1)))|replace(".", ",") if v is not none else "–" }}{% endmacro %}
+{% macro pct(v) %}{{ (v|round|int) if v is not none else "–" }}%{% endmacro %}
+{% macro pc(p, unread=false, off=false) %}{% if off %}poff{% elif unread %}p0{% elif p is none %}p4{% elif p <= 3 %}p1{% elif p <= 10 %}p2{% else %}p3{% endif %}{% endmacro %}
+{% macro map_box(side) -%}
+<div class="map" style="width: {{ side.map.width }}px; height: {{ side.map.height }}px">
+  {% for t in side.map.tiles %}<img src="{{ t.src }}" style="left: {{ t.left }}px; top: {{ t.top }}px" alt="">{% endfor %}
+  {% for c in side.cells %}{% set p = side.map.points[loop.index0] %}
+  <span class="pin {{ pc(c.pos, c.unread, c.off) }}" style="left: {{ p.x }}px; top: {{ p.y }}px; width: {{ side.map.pin }}px; height: {{ side.map.pin }}px; margin: -{{ side.map.pin / 2 }}px 0 0 -{{ side.map.pin / 2 }}px; font-size: {{ side.map.font }}px">{% if c.off %}–{% elif c.unread %}?{% else %}{{ c.pos if c.pos is not none else "20+" }}{% endif %}</span>
+  {% endfor %}
+  {% if side.map.has_tiles %}<span class="attr">© OpenStreetMap</span>{% endif %}
+</div>
+{%- endmacro %}
+{% macro mini_chart(c, title) -%}
+<figure class="mini"><figcaption>{{ title }}</figcaption>
+<svg class="chart" viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ title }}">
+  {% for g in c.grid %}<line class="grid" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ g.y }}" y2="{{ g.y }}"/>
+  <text class="tick" x="{{ c.left - 6 }}" y="{{ g.y + 4 }}" text-anchor="end">{{ g.label }}</text>{% endfor %}
+  {% if c.n > 1 %}<polyline class="trend" points="{{ c.line }}"/>{% endif %}
+  {% for p in c.points %}<circle class="pt" cx="{{ p.x }}" cy="{{ p.y }}" r="4.5"/>
+  <text class="pt-label" x="{{ p.x }}" y="{{ p.y - 9 if p.y - 9 > c.top else p.y + 17 }}" text-anchor="middle">{{ n(p.value) }}</text>{% endfor %}
+  {% for xl in c.xlabels %}<text class="tick" x="{{ xl.x }}" y="{{ c.height - 12 }}" text-anchor="middle">{{ xl.date }}</text>{% endfor %}
+</svg></figure>
+{%- endmacro %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{{ kicker }} · {{ r.location.name }}</title>
+{% include "_estilo.html" %}
+<style>
+.nums { width: 100%; border-collapse: separate; border-spacing: 0 1.6mm; margin-top: 2mm; }
+.nums th, .nums td { padding: 2.6mm 4mm; background: var(--surface); text-align: right; white-space: nowrap; }
+.nums th { text-align: left; font-weight: 600; border-radius: 2.5mm 0 0 2.5mm; white-space: normal; }
+.nums td:last-child { border-radius: 0 2.5mm 2.5mm 0; font-weight: 700; }
+.nums thead th, .nums thead td { background: none; font-size: 8pt; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 400; padding-top: 0; padding-bottom: 0; }
+.nums .t-good { color: var(--good); } .nums .t-bad { color: var(--bad); } .nums .t-same { color: var(--muted); }
+.lead { margin-top: 7mm; }
+.maps { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; margin-top: 4mm; }
+.maps h3 { margin-bottom: 2mm; } .maps h3 small { font: 400 9pt Inter, sans-serif; color: var(--muted); margin-left: 2mm; }
+.map { position: relative; overflow: hidden; border-radius: 3mm; border: .3mm solid var(--line); background: #1B1F22; }
+.map img { position: absolute; width: 256px; height: 256px; }
+.map .pin { position: absolute; width: 26px; height: 26px; margin: -13px 0 0 -13px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font: 700 10px Inter, sans-serif;
+            border: 2px solid #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .5); }
+.map .attr { position: absolute; right: 2px; bottom: 1px; font-size: 7pt; color: #333; background: rgb(255 255 255 / .75); padding: 0 3px; }
+.p1 { background: #1F9D55; color: #fff; } .p2 { background: #F2C230; color: #111; } .p3 { background: #F08A24; color: #111; }
+.p4 { background: #D33D44; color: #fff; } .p0 { background: #8A949A; color: #fff; }
+.poff { background: rgb(40 44 46 / .55); color: #ddd; border-style: dashed !important; }
+.legend { display: flex; gap: 5mm; margin-top: 2.5mm; font-size: 8.5pt; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 1.5mm; } .legend i { width: 3mm; height: 3mm; border-radius: 50%; display: inline-block; }
+.changes { margin-top: 7mm; display: grid; grid-template-columns: auto 1fr; gap: 6mm; align-items: center; break-inside: avoid; }
+.cgrid { display: grid; gap: 1.6mm; grid-template-columns: repeat({{ r.grid_size }}, 8mm); }
+.cgrid span { width: 8mm; height: 8mm; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 700 9pt Inter, sans-serif; }
+.ch-better { background: #0F2A1A; color: var(--good); border: .3mm solid #1F5A36; }
+.ch-worse { background: #2A1414; color: var(--bad); border: .3mm solid #5A2626; }
+.ch-same, .ch-unread, .ch-off { background: var(--surface); color: var(--muted); border: .3mm solid var(--line); }
+.changes p { color: var(--muted); } .changes strong { color: var(--text); }
+.page { break-before: page; }
+.comp { width: 100%; border-collapse: separate; border-spacing: 0 1.4mm; }
+.comp th, .comp td { padding: 2.2mm 3mm; background: var(--surface); text-align: right; font-size: 9pt; white-space: nowrap; }
+.comp td.name { text-align: left; font-weight: 600; white-space: normal; overflow-wrap: anywhere; width: 100%; }
+.comp td:first-child { border-radius: 2.5mm 0 0 2.5mm; } .comp td:last-child { border-radius: 0 2.5mm 2.5mm 0; }
+.comp thead th { background: none; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 400; padding-top: 0; padding-bottom: 0; }
+.comp thead th.name { text-align: left; }
+.comp thead th.grp { text-align: center; color: var(--text); border-bottom: .3mm solid var(--line); padding-bottom: 1mm; }
+.comp tr.own td { background: #0F1A14; color: var(--green); }
+.comp .new { color: var(--muted); font-weight: 400; font-size: 8pt; }
+.comp .t-good { color: var(--good); } .comp .t-bad { color: var(--bad); }
+.minis { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+.mini { margin: 0; } .mini figcaption { font-size: 9pt; color: var(--muted); margin-bottom: 2mm; }
+.explain { display: grid; gap: 2mm; margin-top: 6mm; font-size: 9pt; color: var(--muted); }
+.explain strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <img class="cover-logo" src="{{ a.logo }}" alt="SealsPro">
+  <div class="cover-main">
+    <p class="kicker">{{ kicker }}</p>
+    <h1>{{ r.location.name }}</h1>
+    <p class="cover-meta">Busca por “{{ r.keyword }}”{% if r.location.city %} · {{ r.location.city }}{% endif %}</p>
+    <p class="cover-date">De {{ r.date_before }} a {{ r.date_after }}</p>
+  </div>
+  <img class="cover-symbol" src="{{ a.symbol }}" alt="">
+  <p class="cover-by">Preparado pela SealsPro</p>
+</section>
+
+<section>
+  <h2>Antes e depois</h2>
+  <table class="nums">
+    <thead><tr><th></th><td>{{ r.date_before }}</td><td>{{ r.date_after }}</td><td>Diferença</td></tr></thead>
+    <tbody>
+    {% for x in r.numbers %}<tr><th>{{ x.label }}</th><td>{{ x.before }}</td><td>{{ x.after }}</td><td class="t-{{ x.trend }}">{{ x.delta }}</td></tr>{% endfor %}
+    </tbody>
+  </table>
+  <p class="lead"><strong>{{ r.sentence_1 }}</strong> {{ r.sentence_2 }}</p>
+  <div class="maps">
+    <div><h3>Antes<small>{{ r.date_before }}</small></h3>{{ map_box(r.before) }}</div>
+    <div><h3>Depois<small>{{ r.date_after }}</small></h3>{{ map_box(r.after) }}</div>
+  </div>
+  <div class="legend"><span><i class="p1"></i>1º a 3º</span><span><i class="p2"></i>4º a 10º</span><span><i class="p3"></i>11º a 20º</span><span><i class="p4"></i>fora dos 20 (20+)</span></div>
+  <div class="changes">
+    <div class="cgrid">
+      {% for row in range(r.grid_size - 1, -1, -1) %}{% for col in range(r.grid_size) %}{% set p = r.changes[row * r.grid_size + col] %}
+      <span class="ch-{{ p.trend }}">{% if p.trend == "better" %}▲{% elif p.trend == "worse" %}▼{% elif p.trend == "unread" %}?{% elif p.trend == "off" %}–{% else %}={% endif %}</span>
+      {% endfor %}{% endfor %}
+    </div>
+    <p><strong>O que mudou em cada ponto:</strong> ▲ a posição melhorou, ▼ piorou, = ficou igual. São os mesmos pontos do mapa, na mesma posição.</p>
+  </div>
+</section>
+
+<section class="page">
+  <h2>Quem aparece na frente agora</h2>
+  <table class="comp">
+    <thead><tr><th></th><th></th><th colspan="2" class="grp">Posição geral</th><th colspan="2" class="grp">No top 3</th></tr>
+      <tr><th>#</th><th class="name">Negócio</th><th>Antes</th><th>Agora</th><th>Antes</th><th>Agora</th></tr></thead>
+    <tbody>
+    {% for c in r.competitors %}
+      <tr{% if c.own %} class="own"{% endif %}><td>{{ loop.index if loop.index <= 10 else "" }}</td>
+        <td class="name">{{ c.name }}{% if c.new %} <span class="new">(não aparecia antes)</span>{% endif %}</td>
+        <td>{{ n(c.a_atrp) }}</td><td class="{{ 't-good' if c.trend == 'better' else 't-bad' if c.trend == 'worse' else '' }}">{{ n(c.b_atrp) }}</td>
+        <td>{{ pct(c.a_solv) if c.a_solv is not none else "–" }}</td><td>{{ pct(c.b_solv) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="explain">
+    <p><strong>Posição geral:</strong> posição média em todos os pontos, contando como 21 onde o negócio não aparece. Quanto menor, melhor. <strong>No top 3:</strong> em que parte dos pontos o negócio está entre os 3 primeiros, a parte mais vista da lista.</p>
+  </div>
+
+  {% if r.evolution %}
+  <div class="evolution">
+    <h2>Evolução no período</h2>
+    <div class="minis">
+      {{ mini_chart(r.evolution.charts[0], "Posição geral (quanto mais alto no gráfico, melhor)") }}
+      {{ mini_chart(r.evolution.charts[1], "Pontos no top 3 (%)") }}
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="footnote">Critérios próprios da SealsPro. As duas análises usaram a mesma busca, a mesma grade (raio de {{ r.radius }}, grade {{ r.grid_size }}×{{ r.grid_size }}) e o mesmo zoom ({{ r.view }} de área visível em cada ponto), sem login, para a comparação ser justa. O resultado que cada pessoa vê pode variar com o aparelho, o histórico de buscas e o lugar exato de onde ela busca.</p>
+</section>
+</body>
+</html>

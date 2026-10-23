@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% macro km(m) %}{{ (m / 1000)|round(2)|string|replace(".0", "")|replace(".", ",") }} km{% endmacro %}
+{% macro pos(p) %}{{ p if p is not none else "20+" }}{% endmacro %}
+{% from "_rk_macros.html" import n %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Análise de Ranking <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">
+    <a class="btn btn-secondary" href="/ranking?local={{ r.location_id|urlencode }}">Nova análise</a>
+  </div>
+</header>
+
+<main id="ranking-analise" class="rk-main">
+  <section class="head">
+    <div>
+      <h1>{{ local.title if local else r.name }}</h1>
+      <p class="muted">“{{ r.keyword }}” · grade {{ r.grid_size }}×{{ r.grid_size }} · raio {{ km(r.radius_m) }}
+        (pontos a cada {{ km(spacing) }}) · zoom {{ km(r.view_m) }} · {{ r.created_at|local_dt }} · #{{ r.id }}</p>
+    </div>
+  </section>
+
+{% if r.shown == "pendente" %}
+  <section class="card rk-steps" id="rk-wait" data-id="{{ r.id }}" data-status="pendente"{% if ext_id %} data-ext="{{ ext_id }}"{% endif %}{% if iniciar %} data-start="1"{% endif %}>
+    <h2>Iniciar no Google Maps</h2>
+    <p id="rk-start-msg" role="status">{% if ext_id %}A extensão abre o perfil no Maps numa aba nova, passa pelos {{ r.grid_size * r.grid_size }} pontos e fecha a aba. Esta tela acompanha sozinha.{% else %}O ID da extensão não está configurado no app (coletar.py id-extensao): use o caminho manual abaixo.{% endif %}</p>
+    <div class="form-actions">
+      {% if ext_id %}<button class="btn" type="button" id="rk-start">Iniciar agora</button>{% endif %}
+      <form method="post" action="/ranking/cancelar?id={{ r.id }}"><button class="btn btn-secondary" type="submit">Cancelar análise</button></form>
+    </div>
+    <details class="rk-manual"{% if not ext_id %} open{% endif %}>
+      <summary>Caminho manual (se a extensão não responder)</summary>
+      <ol>
+        <li>Abra o perfil do cliente no Maps: {% if maps_url %}<a href="{{ maps_url }}" target="_blank" rel="noopener noreferrer">abrir no Google Maps</a>{% else %}procure pelo nome no Google Maps{% endif %}.</li>
+        <li>No topo do perfil, clique em <strong>Ranking SealsPro</strong> (logo abaixo de “Pré Análise SealsPro”).</li>
+      </ol>
+    </details>
+    <p class="muted">A análise espera por até 2 horas. Se recarregou a extensão agora, recarregue também esta página.</p>
+  </section>
+{% elif r.status == "coletando" %}
+  <section class="card" id="rk-wait" data-id="{{ r.id }}" data-status="coletando">
+    <h2>Coletando no Google Maps</h2>
+    <progress id="rk-progress" max="{{ st.total }}" value="{{ st.received }}"></progress>
+    <p class="muted" id="rk-progress-label" role="status">{{ st.received }} de {{ st.total }} pontos</p>
+  </section>
+{% elif r.shown in ("erro", "cancelada") %}
+  <p class="notice error" role="alert">{{ icon("bad") }}<span>{{ labels.get(r.shown) }}: {{ r.error or "sem detalhe" }}</span></p>
+{% elif r.shown == "expirada" %}
+  <p class="notice" role="note">{{ icon("unavailable") }}<span>Esta análise não foi iniciada em até 2 horas e expirou. Use “Repetir análise” para rodar de novo.</span></p>
+{% endif %}
+{% if r.shown in ("pronta", "erro", "cancelada", "expirada") %}
+  <form method="post" action="/ranking/repetir?id={{ r.id }}" class="rk-repeat">
+    {% if r.shown == "pronta" %}<a class="btn btn-secondary" href="/ranking/relatorio.pdf?id={{ r.id }}">Baixar PDF</a>{% endif %}
+    <button class="btn" type="submit">Repetir análise</button>
+    <span class="muted">Mesma palavra, grade, raio e zoom; a extensão começa sozinha.</span>
+  </form>
+{% endif %}
+
+{% if r.center_source and r.center_source != "maps" %}
+  <p class="notice" role="note">{{ icon("unavailable") }}<span>Este perfil não tem endereço público no Google Maps (área de atendimento). O centro da grade foi o endereço cadastrado na conta do Google{% if r.center_source == "bairro" %}, localizado só até o bairro{% elif r.center_source == "cidade" %}, localizado só até a cidade{% endif %}.</span></p>
+{% endif %}
+{% if res %}
+  {% set o = res.own %}{% set off = res.get("disabled", r.disabled) %}
+  {% if off %}<p class="notice" role="note">{{ icon("unavailable") }}<span>{{ off|length }} {{ "ponto desligado" if off|length == 1 else "pontos desligados" }}: {{ "fica" if off|length == 1 else "ficam" }} fora dos números. Use “Desligar pontos” no mapa para mudar.</span></p>{% endif %}
+  {% if res.warning or res.unread %}
+  <p class="notice" role="note">{{ icon("unavailable") }}<span>{% if res.warning %}{{ res.warning }} {% endif %}{% if res.unread %}{{ res.unread|length }} ponto(s) sem leitura ficaram fora das métricas.{% endif %}</span></p>
+  {% endif %}
+  <section class="rk-stats">
+    <div class="card"><span class="muted">Encontrado em</span><strong>{{ o.found }} de {{ o.points }}</strong><small>pontos com o perfil entre os 20 primeiros</small></div>
+    <div class="card"><span class="muted">ARP</span><strong>{{ n(o.arp) }}</strong><small>posição média onde aparece</small></div>
+    <div class="card"><span class="muted">ATRP</span><strong>{{ n(o.atrp) }}</strong><small>posição média em todos os pontos (fora dos 20 conta 21)</small></div>
+    <div class="card"><span class="muted">SoLV</span><strong>{{ n(o.solv) }}%</strong><small>pontos no top 3</small></div>
+  </section>
+
+  <section class="rk-result">
+    <div class="card rk-list">
+      <h2>Concorrentes <span class="muted">({{ res.competitorsTotal }})</span></h2>
+      <p class="muted rk-help">Clique num nome para ver a grade dele.{% if res.ownRank %} O perfil está em {{ res.ownRank }}º.{% endif %}</p>
+      <ol class="rk-comps">
+      {% for c in res.competitors[:50] %}
+        <li><button type="button" class="rk-comp{% if c.own %} rk-own{% endif %}" data-k="{{ loop.index0 }}" aria-pressed="{{ 'true' if c.own else 'false' }}">
+          <span class="rk-name">{{ c.name }}</span>
+          <span class="rk-meta">{% if c.rating is not none %}★ {{ n(c.rating) }} ({{ c.reviews or 0 }}) · {% endif %}{{ c.found }}/{{ c.points }} · ATRP {{ n(c.atrp) }} · SoLV {{ n(c.solv) }}%</span>
+        </button></li>
+      {% endfor %}
+      </ol>
+    </div>
+    <div class="card rk-mapcard">
+      <h2 id="rk-map-title">{{ local.title if local else r.name }}</h2>
+      <div id="rk-map" class="rk-map" role="img" aria-label="Mapa com a posição em cada ponto da grade"></div>
+      <ul class="rk-legend">
+        <li><span class="rk-dot rk-p1"></span>1 a 3</li><li><span class="rk-dot rk-p2"></span>4 a 10</li>
+        <li><span class="rk-dot rk-p3"></span>11 a 20</li><li><span class="rk-dot rk-p4"></span>fora dos 20</li>
+        <li><span class="rk-dot rk-p0"></span>sem leitura</li><li><span class="rk-dot rk-off"></span>desligado</li>
+      </ul>
+      {% if r.shown == "pronta" %}
+      <div class="rk-edit" id="rk-edit-bar">
+        <button class="btn btn-secondary" type="button" id="rk-edit">Desligar pontos</button>
+        <span class="muted" id="rk-edit-msg">Para pontos sem gente (represa, mata, serra): saem dos números desta análise e as próximas nem buscam neles.</span>
+        <button class="btn" type="button" id="rk-edit-save" hidden>Salvar pontos</button>
+        <button class="btn btn-secondary" type="button" id="rk-edit-cancel" hidden>Cancelar</button>
+      </div>
+      {% endif %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Posição por ponto</h2>
+    <div class="rk-grid" style="--n: {{ r.grid_size }}" aria-label="Grade do perfil, do norte (em cima) para o sul">
+      {% for row in range(r.grid_size - 1, -1, -1) %}{% for col in range(r.grid_size) %}{% set i = row * r.grid_size + col %}
+      {% set p = o.positions[i] %}
+      {% if i in off %}<span class="rk-cell rk-off" title="Ponto desligado">–</span>{% else %}
+      <span class="rk-cell {% if i in res.unread %}rk-p0{% elif p is none %}rk-p4{% elif p <= 3 %}rk-p1{% elif p <= 10 %}rk-p2{% else %}rk-p3{% endif %}">{% if i in res.unread %}?{% else %}{{ pos(p) }}{% endif %}</span>{% endif %}
+      {% endfor %}{% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Locais encontrados</h2>
+    <div class="table-wrap">
+    <table class="history">
+      <thead><tr><th>#</th><th>Local</th><th>Categoria</th><th class="num">Média</th><th class="num">Avaliações</th>
+        <th class="num">Encontrado</th><th class="num">ARP</th><th class="num">ATRP</th><th class="num">SoLV</th></tr></thead>
+      <tbody>
+      {% for c in res.competitors %}
+        <tr{% if c.own %} class="rk-own-row"{% endif %}>
+          <td>{{ loop.index }}</td>
+          <td>{{ c.name }}{% if c.address %}<br><small class="muted">{{ c.address }}</small>{% endif %}</td>
+          <td>{{ c.category or "" }}</td>
+          <td class="num">{{ n(c.rating) }}</td>
+          <td class="num">{{ c.reviews if c.reviews is not none else "–" }}</td>
+          <td class="num">{{ c.found }}/{{ c.points }}</td>
+          <td class="num">{{ n(c.arp) }}</td>
+          <td class="num">{{ n(c.atrp) }}</td>
+          <td class="num">{{ n(c.solv) }}%</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% if res.competitorsTotal > res.competitors|length %}<p class="muted">Mostrando {{ res.competitors|length }} de {{ res.competitorsTotal }}.</p>{% endif %}
+  </section>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script id="rk-data" type="application/json">{{ {"id": r.id, "size": r.grid_size, "points": r.points, "center": [r.center_lat, r.center_lng], "unread": res.unread,
+    "disabled": off,
+    "series": res.competitors[:50]|map(attribute="positions")|list,
+    "names": res.competitors[:50]|map(attribute="name")|list, "own": local.title if local else r.name}|tojson }}</script>
+  <script src="/static/ranking.js" defer></script>
+{% endif %}
+
+{% if r.shown == "pendente" and ext_id %}{% with start_id=r.id, clean_url="/ranking/analise?id=" ~ r.id %}{% include "_rk_start.html" %}{% endwith %}{% endif %}
+{% if r.shown in ("pendente", "coletando") %}
+<script>
+  // Acompanha a coleta: atualiza o progresso e recarrega quando a situacao muda.
+  (function () {
+    var box = document.getElementById("rk-wait");
+    var id = box.dataset.id, was = box.dataset.status;
+    setInterval(function () {
+      fetch("/ranking/status?id=" + encodeURIComponent(id)).then(function (r) { return r.json(); }).then(function (s) {
+        if (s.status !== was) { location.reload(); return; }
+        var bar = document.getElementById("rk-progress"), label = document.getElementById("rk-progress-label");
+        if (bar) { bar.max = s.total; bar.value = s.received; label.textContent = s.received + " de " + s.total + " pontos"; }
+      }).catch(function () {});
+    }, 2000);
+  })();
+</script>
+{% endif %}
+</main>
+{% endblock %}

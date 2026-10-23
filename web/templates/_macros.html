@@ -1,0 +1,19 @@
+{# Ícones por status: formas diferentes (não só cor) + texto ao lado. #}
+{% macro icon(status) -%}
+<svg class="icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+  {% if status == "bad" %}
+    <circle cx="12" cy="12" r="9.5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/>
+  {% elif status == "fair" %}
+    <path d="M12 3.2l9.2 16.3H2.8z"/><path d="M12 9.5v4.6"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>
+  {% elif status == "good" %}
+    <circle cx="12" cy="12" r="9.5"/><path d="M7.8 12.4l3 3 5.6-6.4"/>
+  {% else %}
+    <circle cx="12" cy="12" r="9.5" stroke-dasharray="3 3.2"/><path d="M8.5 12h7"/>
+  {% endif %}
+</svg>
+{%- endmacro %}
+
+{% macro stars(rating) -%}
+{%- set full = (rating | round(0, 'floor')) | int -%}
+<span class="stars" aria-hidden="true">{{ "★" * full }}{{ "☆" * (5 - full) }}</span>
+{%- endmacro %}

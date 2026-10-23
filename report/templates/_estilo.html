@@ -1,0 +1,110 @@
+{# Estilo comum dos PDFs (relatorio e comparativo). Espera `a` (assets), `r.date` e `date_label`. #}
+<style>
+@font-face { font-family: "Inter"; font-weight: 400; src: url("{{ a.inter_regular }}"); }
+@font-face { font-family: "Inter"; font-weight: 600; src: url("{{ a.inter_semibold }}"); }
+@font-face { font-family: "Inter"; font-weight: 700; src: url("{{ a.inter_bold }}"); }
+@font-face { font-family: "Space Grotesk"; font-weight: 500; src: url("{{ a.grotesk_medium }}"); }
+@font-face { font-family: "Space Grotesk"; font-weight: 700; src: url("{{ a.grotesk_bold }}"); }
+
+:root {
+  --bg: #0B0B0D; --surface: #151515; --line: #2B2B2B; --text: #F8FAFC; --muted: #A8B0BA;
+  --green: #14B8A6; --blue: #818CF8;
+  --bad: #F87171; --fair: #FBBF24; --good: #14B8A6;
+}
+@page {
+  size: A4; margin: 16mm 16mm 24mm; background: #0B0B0D;
+  @bottom-left { content: ""; width: 36mm; height: 9mm; margin-bottom: 6mm;
+                 background: url("{{ a.logo }}") no-repeat left center; background-size: contain; }
+  @bottom-center { content: "SealsPro · {{ date_label }} de {{ r.date }}"; color: #F8FAFC; font: 400 8.5pt Inter, sans-serif; margin-bottom: 6mm; }
+  @bottom-right { content: "Página " counter(page) " de " counter(pages); color: #F8FAFC; font: 400 8.5pt Inter, sans-serif; margin-bottom: 6mm; }
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+body { margin: 0; color: var(--text); font: 400 10pt/1.5 Inter, sans-serif; overflow-wrap: anywhere; }
+h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0; letter-spacing: -.01em; }
+h2 { font-size: 18pt; font-weight: 700; color: var(--green); margin-bottom: 5mm; break-after: avoid; }
+h3 { font-size: 11.5pt; font-weight: 700; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 8.5pt; }
+
+/* ---- capa ---- */
+.cover { height: 251mm; display: flex; flex-direction: column; justify-content: space-between; position: relative; break-after: page; }
+.cover-logo { width: 78mm; }
+.cover-main { margin-top: 30mm; }
+.kicker { font: 500 10.5pt "Space Grotesk", sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--blue); margin-bottom: 5mm; }
+.cover h1 { font-size: 34pt; line-height: 1.1; font-weight: 700; max-width: 150mm; }
+.cover-meta { margin-top: 6mm; font-size: 12pt; color: var(--muted); }
+.cover-date { margin-top: 3mm; font: 500 12pt "Space Grotesk", sans-serif; color: var(--green); }
+.cover-symbol { position: absolute; right: -8mm; bottom: 14mm; width: 92mm; opacity: .9; }
+.cover-by { font-size: 10pt; color: var(--muted); }
+
+/* ---- resumo ---- */
+.summary { break-after: page; }
+.summary-grid { display: grid; grid-template-columns: 78mm 1fr; gap: 8mm; align-items: center; }
+.gauge-box { text-align: center; }
+.gauge { width: 76mm; height: auto; }
+.gauge path.b { fill: none; stroke-width: 16; }
+.gauge .bad { stroke: #E5736B; } .gauge .fair { stroke: #F0B441; } .gauge .good { stroke: #4FAE6F; }
+.gauge .tick { fill: var(--muted); font: 400 9px Inter, sans-serif; }
+.gauge .needle path { stroke: var(--text); } .gauge .needle circle { fill: var(--text); }
+.score { font: 700 40pt/1 "Space Grotesk", sans-serif; margin-top: -2mm; }
+.score small { font: 400 10pt Inter, sans-serif; color: var(--muted); }
+.score-label { margin-top: 1mm; font-weight: 700; }
+.counters { display: grid; gap: 3mm; }
+.counter { display: grid; grid-template-columns: 11mm 1fr; align-items: center; gap: 3mm; padding: 3.5mm 4mm; border-radius: 3mm; background: var(--surface); border: .3mm solid var(--line); border-left: 1.4mm solid var(--c); color: var(--c); }
+.counter strong { font: 700 22pt/1 "Space Grotesk", sans-serif; }
+.counter .name { font-weight: 700; display: flex; align-items: center; gap: 1.5mm; } .counter .help { color: var(--text); font-size: 9pt; opacity: .85; }
+.counter .txt { display: grid; }
+.lead { margin-top: 9mm; font-size: 12pt; line-height: 1.55; }
+.lead strong { color: var(--green); }
+.profile-strip { margin-top: 8mm; display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; }
+.profile-strip div { background: var(--surface); border: .3mm solid var(--line); border-radius: 3mm; padding: 3mm 4mm; }
+.profile-strip .k { font-size: 8pt; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.profile-strip .v { font: 700 14pt "Space Grotesk", sans-serif; margin-top: 1mm; }
+.star { vertical-align: -.5mm; }
+.footnote { margin-top: 10mm; padding-top: 3mm; border-top: .3mm solid var(--line); font-size: 8.5pt; color: var(--muted); }
+
+.competitors { margin-top: 8mm; }
+.competitors .profile-strip { margin-top: 3mm; }
+
+/* ---- itens ---- */
+.st-bad { --c: var(--bad); } .st-fair { --c: var(--fair); } .st-good { --c: var(--good); }
+.intro { color: var(--muted); margin-bottom: 5mm; }
+.group { margin: 7mm 0 3mm; display: flex; align-items: baseline; gap: 3mm; color: var(--c); break-after: avoid; }
+.group h3 { font-size: 13pt; color: var(--c); } .group .n { font-size: 9pt; color: var(--muted); }
+.item { background: var(--surface); border: .3mm solid var(--line); border-left: 1.4mm solid var(--c); border-radius: 3mm; padding: 4mm 5mm; margin-bottom: 3mm; break-inside: avoid; }
+.item-head { display: flex; justify-content: space-between; align-items: center; gap: 4mm; }
+.badge { display: inline-flex; align-items: center; gap: 1.5mm; padding: .6mm 3mm .6mm 2mm; border: .3mm solid var(--c); border-radius: 5mm; color: var(--c); font: 700 8pt Inter, sans-serif; white-space: nowrap; }
+.sit { margin-top: 1.5mm; }
+.band { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1mm; height: 2mm; margin-top: 3.5mm; }
+.band span { border-radius: 1mm; } .band .s1 { background: #E5736B; } .band .s2 { background: #F0B441; } .band .s3 { background: #4FAE6F; }
+.band i { position: absolute; top: -1.4mm; width: 1.1mm; height: 4.8mm; margin-left: -.55mm; background: var(--text); border-radius: .5mm; box-shadow: 0 0 0 .5mm var(--surface); }
+.band-legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1mm; margin-top: 1mm; font-size: 7pt; color: var(--muted); }
+.advice { margin-top: 3.5mm; padding: 2.5mm 3.5mm; border-radius: 2mm; background: #0F1A14; border: .3mm solid #1F3A2A; }
+.advice.fazer { background: #101A22; border-color: #1E3A4C; }
+.advice strong { display: block; font-size: 8pt; text-transform: uppercase; letter-spacing: .06em; color: var(--blue); margin-bottom: .6mm; }
+.advice.manter strong { color: var(--green); }
+
+/* ---- evolucao ---- */
+.evolution { break-before: page; }
+.chart { width: 100%; height: auto; margin-top: 4mm; }
+.chart .cb { opacity: .2; } .chart .cb-bad { fill: #E5736B; } .chart .cb-fair { fill: #F0B441; } .chart .cb-good { fill: #4FAE6F; }
+.chart .band-label { fill: var(--muted); font: 600 10px Inter, sans-serif; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .tick { fill: var(--muted); font: 400 10px Inter, sans-serif; }
+.chart .trend { fill: none; stroke: var(--blue); stroke-width: 2; }
+.chart .pt { fill: var(--green); stroke: var(--text); stroke-width: 2; }
+.chart .pt-label { fill: var(--text); font: 700 11px Inter, sans-serif; }
+
+/* ---- nao avaliados ---- */
+/* ---- resumo: itens fechados ---- */
+.rows { display: grid; gap: 2.5mm; }
+.row { display: flex; align-items: center; gap: 3.5mm; padding: 3.5mm 5mm; background: var(--surface); border: .3mm solid var(--line); border-left: 1.4mm solid var(--c); border-radius: 3mm; break-inside: avoid; }
+.row .dot { display: inline-flex; color: var(--c); }
+.row .t { font: 700 11pt "Space Grotesk", sans-serif; }
+.row .t.hidden { filter: blur(5px); color: var(--muted); user-select: none; }
+.row .badge { margin-left: auto; }
+.cta { margin-top: 8mm; padding: 4mm 5mm; border-radius: 3mm; background: #101A22; border: .3mm solid #1E3A4C; break-inside: avoid; }
+.cta strong { display: block; color: var(--blue); font: 700 11pt "Space Grotesk", sans-serif; margin-bottom: 1mm; }
+</style>

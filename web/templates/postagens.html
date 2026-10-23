@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% macro chip(p) -%}
+{%- set ds = display_status(p) %}{% set st = status[ds] -%}
+<a class="pt-chip pt-{{ st[1] }}" href="/postagens/editar?id={{ p.id }}" title="{{ st[0] }} · {{ p.summary[:120] }}">
+  <span class="pt-chip-top"><span class="pt-dot" aria-hidden="true"></span>{{ p.scheduled_at|local_time }}{% if p.image %} <span class="pt-cam" aria-label="com imagem">▣</span>{% endif %}</span>
+  <span class="pt-chip-text">{{ p.summary|truncate(40, true, "…") }}</span>
+  <span class="sr-only">{{ st[0] }}</span>
+</a>
+{%- endmacro %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Postagens <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">
+    {% include "_picker.html" %}
+    <a class="btn btn-secondary" href="/{% if atual %}?local={{ atual.id|urlencode }}{% endif %}">Análise Completa</a>
+  </div>
+</header>
+
+<main id="postagens" class="pt-main">
+{% if not atual %}
+  <section class="card empty"><h1>Nenhum local ativo</h1><p>Sincronize os locais na tela da Análise Completa.</p></section>
+{% else %}
+  <section class="head">
+    <div>
+      <h1>{{ atual.title }}</h1>
+      <p class="muted">Novidades agendadas para o perfil no Google. O computador publica sozinho na hora marcada.</p>
+    </div>
+    <div class="head-actions">
+      <a class="btn" href="/postagens/nova?local={{ atual.id|urlencode }}">+ Nova postagem</a>
+    </div>
+  </section>
+
+  {% if ok == "agendada" %}<p class="notice pt-ok" role="status">{{ icon("good") }}<span>Postagem salva na fila.</span></p>{% endif %}
+  {% if ok == "apagada" %}<p class="notice pt-ok" role="status">{{ icon("good") }}<span>Postagem tirada da fila.</span></p>{% endif %}
+
+  {% if login_problem %}
+  <p class="notice error" role="alert">{{ icon("bad") }}<span><strong>O login do Google parou de funcionar.</strong> As postagens não saem até você refazer o login no terminal: <code>./.venv/bin/python fase0.py login</code></span></p>
+  {% endif %}
+  {% if not publisher.installed %}
+  <p class="notice error" role="alert">{{ icon("bad") }}<span><strong>O publicador automático não está ligado.</strong> As postagens agendadas só saem com ele. No terminal: <code>./.venv/bin/python coletar.py publicador instalar</code></span></p>
+  {% elif publisher.stale %}
+  <p class="notice error" role="alert">{{ icon("bad") }}<span><strong>O publicador automático não roda {% if publisher.last %}desde {{ publisher.last.isoformat()|local_dt }}{% else %}desde que foi ligado{% endif %}.</strong> Confira com <code>./.venv/bin/python coletar.py publicador status</code></span></p>
+  {% endif %}
+  {% if pending %}
+  <p class="notice" role="note">{{ icon("fair") }}<span>{{ pending }} {{ "postagem precisa" if pending == 1 else "postagens precisam" }} da sua atenção (atrasada, falhou ou recusada). Veja na lista.</span></p>
+  {% endif %}
+
+  {% set a = alert %}
+  <section class="card pt-alert{% if a.level %} pt-alert-{{ a.level }}{% endif %}" aria-label="Situação da última postagem">
+    <div><span class="muted">Última postagem</span>
+      <strong>{% if a.last %}há {{ a.last_days }} {{ "dia" if a.last_days == 1 else "dias" }} <span class="muted">({{ a.last.isoformat()|local_day }})</span>{% else %}nenhuma encontrada{% endif %}</strong></div>
+    <div><span class="muted">Próxima agendada</span>
+      <strong>{% if a.next %}{{ a.next.isoformat()|local_dt }}{% else %}nenhuma{% endif %}</strong></div>
+    {% if a.level == "vai_vencer" %}
+    <p>{{ icon("fair") }}Sem postagem até {{ a.deadline.isoformat()|local_day }}, o perfil passa de {{ a.limit }} dias sem postar e o item “Data da última postagem” da análise fica Fraco.</p>
+    {% elif a.level == "vencido" %}
+    <p>{{ icon("bad") }}O perfil já está há mais de {{ a.limit }} dias sem postagem: o item “Data da última postagem” da análise está Fraco.</p>
+    {% elif a.level == "sem_postagem" %}
+    <p>{{ icon("bad") }}Nenhuma postagem encontrada nem agendada: o item “Data da última postagem” da análise fica Fraco.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="pt-bar">
+      {% if vista == "calendario" %}
+      <div class="pt-nav">
+        <a class="btn btn-secondary pt-arrow" href="/postagens?local={{ atual.id|urlencode }}&amp;mes={{ prev }}&amp;vista={{ vista }}" aria-label="Mês anterior">←</a>
+        <a class="btn btn-secondary pt-arrow" href="/postagens?local={{ atual.id|urlencode }}&amp;mes={{ next }}&amp;vista={{ vista }}" aria-label="Próximo mês">→</a>
+        <h2>{{ month_label }}</h2>
+        {% if mes != this_month %}<a class="btn btn-secondary" href="/postagens?local={{ atual.id|urlencode }}&amp;vista={{ vista }}">Hoje</a>{% endif %}
+      </div>
+      {% else %}<h2>Todas as postagens <span class="muted">· mais recentes primeiro</span></h2>{% endif %}
+      <nav class="pt-tabs" aria-label="Modo de visualização">
+        <a href="/postagens?local={{ atual.id|urlencode }}&amp;mes={{ mes }}&amp;vista=calendario" {% if vista == "calendario" %}aria-current="page"{% endif %}>Calendário</a>
+        <a href="/postagens?local={{ atual.id|urlencode }}&amp;mes={{ mes }}&amp;vista=lista" {% if vista == "lista" %}aria-current="page"{% endif %}>Lista</a>
+      </nav>
+    </div>
+
+    {% if vista == "calendario" %}
+    <div class="pt-cal" role="grid" aria-label="Calendário de {{ month_label }}">
+      <div class="pt-row pt-head" role="row">{% for d in weekdays %}<div role="columnheader">{{ d }}</div>{% endfor %}</div>
+      {% for week in weeks %}
+      <div class="pt-row" role="row">
+        {% for d in week %}
+        <div class="pt-day{% if not d.in_month %} pt-out{% endif %}{% if d.today %} pt-today{% endif %}{% if d.past %} pt-past{% endif %}" role="gridcell">
+          {% if d.past %}<span class="pt-num">{{ d.date.day }}</span>
+          {% else %}<a class="pt-num pt-add" href="/postagens/nova?local={{ atual.id|urlencode }}&amp;dia={{ d.date.isoformat() }}" title="Agendar para {{ d.date.strftime('%d/%m') }}">{{ d.date.day }}<span aria-hidden="true">+</span></a>{% endif %}
+          {% for p in d.posts %}{{ chip(p) }}{% endfor %}
+        </div>
+        {% endfor %}
+      </div>
+      {% endfor %}
+    </div>
+    <ul class="pt-legend" aria-label="Legenda">
+      {% for key in ["agendada", "publicada", "nova tentativa", "falhou"] %}<li class="pt-{{ status[key][1] }}"><span class="pt-dot" aria-hidden="true"></span>{{ status[key][0] if key != "falhou" else "Falhou ou recusada" }}</li>{% endfor %}
+    </ul>
+    {% else %}
+    {% if rows %}
+    <div class="pt-table-wrap">
+    <table class="pt-table">
+      <thead><tr><th>Data</th><th>Situação</th><th>Texto</th><th>Botão</th><th></th></tr></thead>
+      <tbody>
+      {% for p in rows %}{% set ds = display_status(p) %}{% set st = status[ds] %}
+        <tr>
+          <td class="pt-nowrap">{{ p.scheduled_at|local_dt }}</td>
+          <td><span class="pt-tag pt-{{ st[1] }}"><span class="pt-dot" aria-hidden="true"></span>{{ st[0] }}</span>
+            {% if p.error and p.status != "publicada" %}<br><small class="muted">{{ p.error }}</small>{% endif %}</td>
+          <td>{% if p.image %}<span class="pt-cam" aria-label="com imagem">▣</span> {% endif %}{{ p.summary|truncate(90, true, "…") }}</td>
+          <td class="pt-nowrap">{{ cta_labels.get(p.cta_type, "") if p.cta_type else "—" }}</td>
+          <td class="pt-nowrap"><a href="/postagens/editar?id={{ p.id }}">{{ "Abrir" if p.status in ("publicada", "publicando", "recusada") else "Editar" }}</a>
+            {% if p.search_url and p.status == "publicada" %} · <a href="{{ p.search_url|safe_url }}" target="_blank" rel="noopener noreferrer">Ver no Google</a>{% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+    <p class="muted">Nenhuma postagem ainda. Clique em <strong>+ Nova postagem</strong> ou num dia do calendário.</p>
+    {% endif %}
+    {% endif %}
+  </section>
+{% endif %}
+</main>
+{% endblock %}

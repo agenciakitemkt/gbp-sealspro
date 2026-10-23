@@ -1,0 +1,19 @@
+{% from "_macros.html" import icon %}
+<li class="item st-{{ it.status }}">
+  <span class="item-icon">{{ icon(it.status) }}</span>
+  <div class="item-body">
+    <div class="item-head">
+      <h3>{{ it.title }}</h3>
+      <span class="badge st-{{ it.status }}">{{ icon(it.status) }}{{ it.status|status_label }}</span>
+    </div>
+    <p class="situation">{{ it.message|msg }}</p>
+    {% if it.score is not none %}
+    <div class="band" role="img" aria-label="Nota {{ it.score }} de 100, faixa {{ it.status|status_label }}">
+      <span class="seg seg-bad"></span><span class="seg seg-fair"></span><span class="seg seg-good"></span>
+      <span class="mark" style="left: {{ '%.1f' | format(it.score|band_position) }}%"></span>
+    </div>
+    <div class="band-legend" aria-hidden="true"><span>Fraco</span><span>Razoável</span><span>Bom</span></div>
+    {% endif %}
+  </div>
+  <div class="item-score">{% if it.score is none %}<span aria-label="sem nota">–</span>{% else %}{{ it.score }}<small>/100</small>{% endif %}</div>
+</li>

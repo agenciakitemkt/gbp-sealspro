@@ -1,0 +1,180 @@
+{
+ "id": "01a11917-cd7f-7000-8000-000000000000",
+ "ncomp": 60,
+ "basic": {
+  "location_name": "Negócio Exempl",
+  "category": "Imobiliária",
+  "is_verified": true
+ },
+ "stats": {
+  "bad_items": 3,
+  "fair_items": 4,
+  "good_items": 13,
+  "no_data_items": 0,
+  "overall_score": 75
+ },
+ "items": [
+  {
+   "id": "posts",
+   "s": 0
+  },
+  {
+   "id": "360_images",
+   "s": 0
+  },
+  {
+   "id": "last_review_date",
+   "s": 0
+  },
+  {
+   "id": "media_freshness",
+   "s": 50
+  },
+  {
+   "id": "reviews_without_response",
+   "s": 50
+  },
+  {
+   "id": "reviews_without_text",
+   "s": 50
+  },
+  {
+   "id": "videos",
+   "s": 50
+  },
+  {
+   "id": "location_name",
+   "s": 100
+  },
+  {
+   "id": "phone",
+   "s": 100
+  },
+  {
+   "id": "website",
+   "s": 100
+  },
+  {
+   "id": "hours",
+   "s": 100
+  },
+  {
+   "id": "reviews_quantity",
+   "s": 100
+  },
+  {
+   "id": "reviews_average",
+   "s": 100
+  },
+  {
+   "id": "logo",
+   "s": 100
+  },
+  {
+   "id": "is_verified",
+   "s": 100
+  },
+  {
+   "id": "description",
+   "s": 100
+  },
+  {
+   "id": "review_growth_trend",
+   "s": 100
+  },
+  {
+   "id": "reviews_ranking_top_10",
+   "s": 100
+  },
+  {
+   "id": "reviews_ranking_average",
+   "s": 100
+  },
+  {
+   "id": "social_links",
+   "s": 100
+  }
+ ],
+ "pd": {
+  "cid": "0000000000000000001",
+  "place_id": "",
+  "location_name": "Negócio Exempl",
+  "category": "Imobiliária",
+  "all_categories": [
+   "Imobiliária",
+   "Agência de imóveis comerciais",
+   "Corretora de aluguel de imóveis"
+  ],
+  "address": "Rua Exemplo, 100, Cidade Exemplo",
+  "address_info": {
+   "city": "Cidade Exemplo"
+  },
+  "phones": [
+   "+55 00 00000-0000"
+  ],
+  "website": "https://example.com/",
+  "description": "Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos testes. Texto fictício de descrição usado só nos te",
+  "hours": {
+   "Friday": "8 AM–6 PM",
+   "Monday": "8 AM–6 PM (Hours might differ)",
+   "Saturday": "Closed",
+   "Sunday": "Closed",
+   "Thursday": "8 AM–6 PM",
+   "Tuesday": "8 AM–6 PM",
+   "Wednesday": "8 AM–6 PM"
+  },
+  "logo_url": "https://example.com/logo.jpg",
+  "cover_photo_url": "https://example.com/capa.jpg",
+  "is_verified": true,
+  "social_links": [
+   {
+    "name": "Facebook",
+    "url": "https://example.com/rede"
+   },
+   {
+    "name": "LinkedIn",
+    "url": "https://example.com/rede"
+   },
+   {
+    "name": "Instagram",
+    "url": "https://example.com/rede"
+   }
+  ],
+  "reviews_qty": 115,
+  "reviews_average": 4.8,
+  "reviews_by_stars": [
+   3,
+   0,
+   3,
+   3,
+   106
+  ],
+  "last_review_days_ago": 60,
+  "reviews_statistics": {
+   "total_reviews": 115,
+   "not_answered": 42,
+   "answered": 73,
+   "reviews_with_text": 64,
+   "reviews_without_text": 51,
+   "avg_rating": 4.82,
+   "last_fixed_n": 11,
+   "last_fixed_statistics": {
+    "total_reviews": 11,
+    "avg_rating": 4.64
+   }
+  },
+  "media_statistics": {
+   "last_media_days_since": 60,
+   "video_count": 2,
+   "has_videos": true,
+   "image_360_count": 1,
+   "has_360": true,
+   "total_items": 9
+  },
+  "total_photos": 11,
+  "posts_count": 0,
+  "last_post_days_ago": null,
+  "avg_reviews_count_all": 26,
+  "is_location_on_top_10": true
+ }
+}

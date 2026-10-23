@@ -1,0 +1,293 @@
+{
+  "location": {
+    "id": "locations/0000000000000000001",
+    "name": "Profissional Exemplo - Oftalmologista",
+    "category": "Oftalmologista",
+    "city": "Cidade Exemplo",
+    "address": "Rua Exemplo, 100, Bairro Exemplo, Cidade Exemplo, MG, 00000-000",
+    "phone": "(00) 00000-0000",
+    "website": "https://example.com/",
+    "description": "Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de descrição do perfil usado apenas nos testes. Texto fictício de ",
+    "rating": 5.0,
+    "reviewCount": 22,
+    "starDistribution": [
+      22,
+      0,
+      0,
+      0,
+      0
+    ],
+    "hours": {
+      "MONDAY": [
+        [
+          "07:00",
+          "16:00"
+        ]
+      ],
+      "TUESDAY": [
+        [
+          "07:00",
+          "16:00"
+        ]
+      ],
+      "WEDNESDAY": [
+        [
+          "07:00",
+          "16:00"
+        ]
+      ],
+      "THURSDAY": [
+        [
+          "07:00",
+          "16:00"
+        ]
+      ],
+      "FRIDAY": [
+        [
+          "07:00",
+          "16:00"
+        ]
+      ]
+    },
+    "mapsUrl": "https://maps.example.com/?cid=0",
+    "searchUrl": "https://www.google.com/search?q=exemplo",
+    "logoUrl": "https://example.com/logo.jpg",
+    "coverUrl": "https://example.com/capa.jpg",
+    "additionalCategories": [
+      "Médico"
+    ],
+    "specialHours": [
+      {
+        "start": "2026-10-12",
+        "end": "2026-10-12",
+        "closed": true
+      },
+      {
+        "start": "2026-11-02",
+        "end": "2026-11-02",
+        "closed": true
+      }
+    ],
+    "services": [
+      "Serviço exemplo 1",
+      "Serviço exemplo 2",
+      "Serviço exemplo 3",
+      "Serviço exemplo 4"
+    ],
+    "openingDate": "2026-09-10",
+    "servicesEditable": true
+  },
+  "reviews": [
+    {
+      "rating": 5,
+      "createdAt": "2026-09-30T19:18:35.572653Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-24T18:07:40.720153Z",
+      "hasComment": false,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-24T15:46:50.549290Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-21T12:44:51.009038Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-20T22:15:33.417694Z",
+      "hasComment": false,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-19T18:23:56.025813Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-18T12:44:23.297471Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-13T14:57:57.363290Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-13T14:57:48.543878Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-13T14:54:10.938428Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-13T14:46:04.160819Z",
+      "hasComment": false,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-13T14:43:40.120625Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-12T12:06:03.531216Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-13T12:02:17.993025Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-12T21:46:19.687647Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-12T18:44:38.473153Z",
+      "hasComment": false,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-12T16:42:10.747196Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-11T19:47:27.437467Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-12T13:11:15.526207Z",
+      "hasComment": false,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-12T12:48:52.163601Z",
+      "hasComment": false,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-12T12:13:23.882698Z",
+      "hasComment": true,
+      "replied": true
+    },
+    {
+      "rating": 5,
+      "createdAt": "2026-09-11T23:09:34.762474Z",
+      "hasComment": true,
+      "replied": true
+    }
+  ],
+  "reviewsComplete": true,
+  "media": [
+    {
+      "format": "PHOTO",
+      "category": "EXTERIOR",
+      "createdAt": "2026-09-30T18:33:46Z",
+      "url": "https://example.com/media/0.jpg"
+    },
+    {
+      "format": "PHOTO",
+      "category": "ADDITIONAL",
+      "createdAt": "2026-09-30T18:32:50Z",
+      "url": "https://example.com/media/1.jpg"
+    },
+    {
+      "format": "PHOTO",
+      "category": "COVER",
+      "createdAt": "2026-09-30T18:32:40Z",
+      "url": "https://example.com/media/2.jpg"
+    },
+    {
+      "format": "VIDEO",
+      "category": "ADDITIONAL",
+      "createdAt": "2026-09-30T18:29:07Z",
+      "url": "https://example.com/media/3.jpg"
+    },
+    {
+      "format": "VIDEO",
+      "category": "ADDITIONAL",
+      "createdAt": "2026-09-30T18:29:05Z",
+      "url": "https://example.com/media/4.jpg"
+    },
+    {
+      "format": "PHOTO",
+      "category": "ADDITIONAL",
+      "createdAt": "2026-09-30T16:55:33Z",
+      "url": "https://example.com/media/5.jpg"
+    },
+    {
+      "format": "PHOTO",
+      "category": "ADDITIONAL",
+      "createdAt": "2026-09-30T16:55:31Z",
+      "url": "https://example.com/media/6.jpg"
+    },
+    {
+      "format": "PHOTO",
+      "category": "PROFILE",
+      "createdAt": "1970-01-01T00:00:00Z",
+      "url": "https://example.com/media/7.jpg"
+    }
+  ],
+  "customerMedia": [
+    {
+      "format": "PHOTO",
+      "category": null,
+      "createdAt": "2026-09-12T13:00:00Z",
+      "url": "https://example.com/customerMedia/0.jpg"
+    }
+  ],
+  "posts": [
+    {
+      "type": "STANDARD",
+      "createdAt": "2026-10-05T13:05:27.560645Z"
+    },
+    {
+      "type": "STANDARD",
+      "createdAt": "2026-09-28T12:51:46.890012Z"
+    },
+    {
+      "type": "STANDARD",
+      "createdAt": "2026-09-21T13:08:44.723981Z"
+    },
+    {
+      "type": "STANDARD",
+      "createdAt": "2026-09-14T02:37:48.075043Z"
+    }
+  ],
+  "collectionErrors": {},
+  "collectedAt": "2026-10-08T19:52:17+00:00"
+}

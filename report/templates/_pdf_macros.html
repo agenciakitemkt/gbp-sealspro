@@ -1,0 +1,41 @@
+{# Macros dos PDFs: icone de status e medidor da nota geral (bands: fair_from e good_from)
+   e grafico da evolucao (geometria de history.build_chart, com `date` em pontos e rotulos). #}
+{% macro icon(status) -%}
+<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  {% if status == "bad" %}<circle cx="12" cy="12" r="9.5"/><path d="M8.5 8.5l7 7M15.5 8.5l-7 7"/>
+  {% elif status == "fair" %}<path d="M12 3.2l9.2 16.3H2.8z"/><path d="M12 9.5v4.6"/><circle cx="12" cy="17" r=".6" fill="currentColor"/>
+  {% else %}<circle cx="12" cy="12" r="9.5"/><path d="M7.8 12.4l3 3 5.6-6.4"/>{% endif %}
+</svg>
+{%- endmacro %}
+
+{% macro gauge_svg(score, bands) -%}
+<svg class="gauge" viewBox="0 0 200 118" role="img" aria-label="Nota geral {{ score }} de 100">
+  <g fill="none">
+    <path class="b bad" d="M20 100A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="{{ bands.fair_from - 1 }} 100"/>
+    <path class="b fair" d="M20 100A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="0 {{ bands.fair_from }} {{ bands.good_from - bands.fair_from - 1 }} 100"/>
+    <path class="b good" d="M20 100A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="0 {{ bands.good_from }} {{ 100 - bands.good_from }} 100"/>
+  </g>
+  <text class="tick" x="20" y="116" text-anchor="middle">0</text>
+  <text class="tick" x="180" y="116" text-anchor="middle">100</text>
+  <g class="needle" transform="rotate({{ (-90 + score * 1.8) }} 100 100)"><path d="M100 100L100 40" stroke-width="3.5" stroke-linecap="round"/><circle cx="100" cy="100" r="7"/></g>
+</svg>
+{%- endmacro %}
+
+{% macro chart_svg(c) -%}
+<svg class="chart" viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="Nota geral ao longo do tempo">
+  {% for band in c.bands %}
+  <rect class="cb cb-{{ band.cls }}" x="{{ c.left }}" y="{{ '%.1f' | format(band.y) }}" width="{{ c.right - c.left }}" height="{{ '%.1f' | format(band.h) }}"/>
+  <text class="band-label" x="{{ c.right + 8 }}" y="{{ '%.1f' | format(band.y + band.h / 2 + 4) }}">{{ band.label }}</text>
+  {% endfor %}
+  {% for g in c.grid %}
+  <line class="grid" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ '%.1f' | format(g.y) }}" y2="{{ '%.1f' | format(g.y) }}"/>
+  <text class="tick" x="{{ c.left - 8 }}" y="{{ '%.1f' | format(g.y + 4) }}" text-anchor="end">{{ g.label }}</text>
+  {% endfor %}
+  <polyline class="trend" points="{{ c.line }}"/>
+  {% for p in c.points %}
+  <circle class="pt" cx="{{ p.x }}" cy="{{ p.y }}" r="5.5"/>
+  <text class="pt-label" x="{{ p.x }}" y="{{ p.label_y }}" text-anchor="middle">{{ p.score }}</text>
+  {% endfor %}
+  {% for xl in c.xlabels %}<text class="tick" x="{{ xl.x }}" y="{{ c.height - 30 }}" text-anchor="middle">{{ xl.date }}</text>{% endfor %}
+</svg>
+{%- endmacro %}

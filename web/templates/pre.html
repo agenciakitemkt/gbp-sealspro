@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon, stars %}
+{# Texto capturado do Google Maps e nao confiavel: so interpolacao com autoescape, sem o filtro que desliga o escape. #}
+{% block body %}
+{% set o = r.overall %}{% set loc = r.location %}
+{% set gstatus = o.score|overall_status if o.score is not none else "unavailable" %}
+{% set total = r["items"]|length %}{% set evaluated = o.good + o.fair + o.bad %}{% set missing = total - evaluated %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Pré Análise <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">{% if r.overall.score is not none %}{% with pdf="/pre/relatorio.pdf?id=" ~ a.id, sim="/simulador?pre=" ~ a.id %}{% include "_acoes.html" %}{% endwith %}{% endif %}
+    <a class="btn btn-secondary" href="/pre">Todas as pré análises</a></div>
+</header>
+<main>
+  <section class="head">
+    <div>
+      <h1>{{ loc.name or "(sem nome)" }}</h1>
+      <p class="muted">Capturado em <time datetime="{{ a.captured_at }}">{{ a.captured_at|local_dt }}</time> · motor da Pré v{{ a.engine_version }}</p>
+    </div>
+  </section>
+
+  {% if versao_antiga %}
+  <p class="notice error" role="alert">{{ icon("bad") }}<span><strong>Pré análise feita com uma versão anterior dos critérios.</strong> Refaça a pré análise antes de entregar ao cliente.</span></p>
+  {% endif %}
+
+  {% if a.warnings %}
+  <section class="notice error" role="alert">
+    {{ icon("bad") }}
+    <div>
+      <strong>Avisos da coleta</strong> (os itens afetados ficaram fora da nota):
+      <ul class="warnings">{% for w in a.warnings %}<li>{{ w }}</li>{% endfor %}</ul>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="layout">
+    <div class="col-main">
+      <section class="card summary" aria-label="Resumo da nota">
+        <div class="gauge-wrap">
+          {% with score=o.score, status=gstatus, bands=bands %}{% include "_gauge.html" %}{% endwith %}
+          <div class="gauge-read st-{{ gstatus }}">
+            <span class="gauge-num">{{ o.score if o.score is not none else "–" }}</span>
+            <span class="gauge-of">de 100</span>
+            <span class="badge st-{{ gstatus }}">{{ icon(gstatus) }}{{ gstatus|status_label }}</span>
+            <strong class="evaluated-count{% if missing >= 3 %} incomplete{% endif %}">{{ evaluated }} de {{ total }} itens avaliados</strong>
+          </div>
+        </div>
+        <ul class="counters">
+          <li class="counter st-bad"><span class="counter-top">{{ icon("bad") }}<strong>{{ o.bad }}</strong></span><span class="counter-name">Fraco</span><span class="counter-sub">precisam de atenção</span></li>
+          <li class="counter st-fair"><span class="counter-top">{{ icon("fair") }}<strong>{{ o.fair }}</strong></span><span class="counter-name">Razoável</span><span class="counter-sub">podem melhorar</span></li>
+          <li class="counter st-good"><span class="counter-top">{{ icon("good") }}<strong>{{ o.good }}</strong></span><span class="counter-name">Bom</span><span class="counter-sub">em ótimo estado</span></li>
+        </ul>
+      </section>
+
+      {% if missing >= 3 %}
+      <p class="notice error" role="alert">{{ icon("bad") }}<span><strong>Faltam {{ missing }} de {{ total }} itens.</strong> A nota acima considera só os {{ evaluated }} avaliados e pode mudar quando os demais forem coletados. Não use esta nota com o cliente sem conferir.</span></p>
+      {% elif o.unavailable %}
+      <p class="notice" role="note">{{ icon("unavailable") }}<span>{{ o.unavailable }} {{ "item ficou" if o.unavailable == 1 else "itens ficaram" }} sem avaliação (fonte não coletada ou ainda sem leitor). Não entram na nota nem nos contadores.</span></p>
+      {% endif %}
+
+      <section class="card" aria-labelledby="itens-titulo">
+        <h2 id="itens-titulo">Itens avaliados <span class="muted">· do pior para o melhor</span></h2>
+        {% set ns = namespace(shown=false) %}
+        <ol class="items">
+          {% for it in r["items"] %}
+            {% if it.status == "unavailable" and not ns.shown %}
+              {% set ns.shown = true %}
+              <li class="items-divider" aria-hidden="true">Não avaliados nesta pré análise</li>
+            {% endif %}
+            {% include "_item.html" %}
+          {% endfor %}
+        </ol>
+      </section>
+    </div>
+    <aside class="col-side">
+      <section class="card profile" aria-labelledby="perfil-titulo">
+        <h2 id="perfil-titulo">{{ loc.name }}</h2>
+        {% if loc.rating is not none %}
+        <p class="rating"><strong>{{ loc.rating | string | replace(".", ",") }}</strong> {{ stars(loc.rating) }}
+          <span class="muted">{{ loc.reviewCount }} avaliaç{{ "ão" if loc.reviewCount == 1 else "ões" }}</span></p>
+        {% endif %}
+        <p class="muted">{{ loc.category }}{% if not loc.verified %} · não verificado{% endif %}</p>
+        <p class="links">{% if loc.mapsUrl|safe_url %}<a href="{{ loc.mapsUrl|safe_url }}" target="_blank" rel="noopener noreferrer">Ver no Maps</a>{% endif %}</p>
+        <dl class="facts">
+          {% if loc.description %}
+          <dt>Descrição</dt>
+          <dd><details><summary>{{ loc.description[:120] }}{% if loc.description|length > 120 %}…{% endif %}</summary>{{ loc.description }}</details></dd>
+          {% endif %}
+          <dt>Endereço</dt><dd>{{ loc.address or "Não informado" }}</dd>
+          <dt>Telefone</dt><dd>{{ loc.phone or "Não informado" }}</dd>
+          <dt>Site</dt><dd>{% if loc.website|safe_url %}<a href="{{ loc.website|safe_url }}" target="_blank" rel="noopener noreferrer nofollow">{{ loc.website }}</a>{% else %}{{ loc.website or "Não informado" }}{% endif %}</dd>
+          <dt>Horário</dt>
+          <dd>{% if loc.hours %}<ul class="hours">{% for day, ranges in loc.hours.items() %}<li><span>{{ day }}</span> {{ ranges|join(", ") }}</li>{% endfor %}</ul>{% else %}Não informado{% endif %}</dd>
+        </dl>
+      </section>
+    </aside>
+  </div>
+</main>
+{% endblock %}

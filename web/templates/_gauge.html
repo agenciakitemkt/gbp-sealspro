@@ -1,0 +1,18 @@
+{# Medidor 0-100: três faixas + ponteiro. Faixas vêm de scoring.config.OVERALL_BANDS. #}
+{% set fair_from = bands.fair_from %}{% set good_from = bands.good_from %}
+<svg class="gauge" viewBox="0 0 200 118" role="img"
+     aria-label="{% if score is none %}Nota geral indisponível{% else %}Nota geral {{ score }} de 100, faixa {{ status|status_label }}{% endif %}">
+  <g fill="none" stroke-width="16" pathLength="100">
+    <path class="band-bad"  d="M20 100A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="{{ fair_from - 1 }} 100"/>
+    <path class="band-fair" d="M20 100A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="0 {{ fair_from }} {{ good_from - fair_from - 1 }} 100"/>
+    <path class="band-good" d="M20 100A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="0 {{ good_from }} {{ 100 - good_from }} 100"/>
+  </g>
+  <text class="tick" x="20" y="116" text-anchor="middle">0</text>
+  <text class="tick" x="180" y="116" text-anchor="middle">100</text>
+  {% if score is not none %}
+  <g class="needle" transform="rotate({{ -90 + score * 1.8 }} 100 100)">
+    <path d="M100 100L100 40" stroke-width="3.5" stroke-linecap="round"/>
+    <circle cx="100" cy="100" r="7"/>
+  </g>
+  {% endif %}
+</svg>

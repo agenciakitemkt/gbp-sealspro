@@ -1,0 +1,103 @@
+{# Relatorio para o cliente final, da Analise Completa ou da Pre Analise (r.kind == "pre"). A4, so arquivos locais. #}
+{% set kicker = r.kicker | default("Relatório de desempenho do perfil no Google") %}{% set date_label = r.date_label | default("Análise") %}
+{% from "_pdf_macros.html" import icon, gauge_svg, chart_svg %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{{ kicker }} · {{ r.location.name }}</title>
+{% include "_estilo.html" %}
+</head>
+<body>
+
+<section class="cover">
+  <img class="cover-logo" src="{{ a.logo }}" alt="SealsPro">
+  <div class="cover-main">
+    <p class="kicker">{{ kicker }}</p>
+    <h1>{{ r.location.name }}</h1>
+    <p class="cover-meta">{{ r.location.category }}{% if r.location.city %} · {{ r.location.city }}{% endif %}</p>
+    <p class="cover-date">{{ date_label }} realizada em {{ r.date }}</p>
+  </div>
+  <img class="cover-symbol" src="{{ a.symbol }}" alt="">
+  <p class="cover-by">Preparado pela SealsPro</p>
+</section>
+
+<section class="summary">
+  <h2>Resumo da análise</h2>
+  <div class="summary-grid">
+    <div class="gauge-box">
+      {{ gauge_svg(r.overall.score, gauge) }}
+      <p class="score">{{ r.overall.score }}<small> de 100</small></p>
+      <p class="score-label st-{{ r.status }}" style="color: var(--c)">{{ icon(r.status) }} Nota geral: {{ r.status_name }}*</p>
+    </div>
+    <div class="counters">
+      {% for key, name, help in (("bad", "Fraco", "precisam de atenção"), ("fair", "Razoável", "podem melhorar"), ("good", "Bom", "em ótimo estado")) %}
+      <div class="counter st-{{ key }}"><strong>{{ r.counts[key] }}</strong><span class="txt"><span class="name">{{ icon(key) }} {{ name }}</span><span class="help">{{ help }}</span></span></div>
+      {% endfor %}
+    </div>
+  </div>
+  <p class="lead"><strong>{{ r.sentence_1 }}</strong> {{ r.sentence_2 }}</p>
+  <div class="profile-strip">
+    <div><p class="k">Nota média no Google</p><p class="v">{% if r.location.rating is none %}–{% else %}{{ "%.1f" | format(r.location.rating) | replace(".", ",") }} <svg class="star" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8z" fill="#FBBF24"/></svg>{% endif %}</p></div>
+    <div><p class="k">Avaliações</p><p class="v">{{ r.location.reviewCount }}</p></div>
+    <div><p class="k">Itens avaliados</p><p class="v">{{ r.counts.good + r.counts.fair + r.counts.bad }}</p></div>
+  </div>
+  {% if r.competitors and not r.summary %}{% set c = r.competitors %}
+  <div class="competitors">
+    <h3>Comparação com a concorrência</h3>
+    <p class="muted small">{{ c.count }} {{ "negócio" if c.count == 1 else "negócios" }} do mesmo segmento encontrados na região.</p>
+    <div class="profile-strip">
+      <div><p class="k">Média de avaliações do segmento</p><p class="v">{{ c.average }}</p></div>
+      <div class="st-{{ 'good' if c.above else 'bad' }}"><p class="k">Acima da média</p><p class="v" style="color: var(--c)">{{ "Sim" if c.above else "Não" }}</p></div>
+      <div class="st-{{ 'good' if c.top10 else 'bad' }}"><p class="k">Entre os 10 mais avaliados</p><p class="v" style="color: var(--c)">{{ "Sim" if c.top10 else "Não" }}</p></div>
+    </div>
+  </div>
+  {% endif %}
+  <p class="footnote">* Critérios próprios da SealsPro. A nota vai de 0 a 100 e resume o estado dos itens avaliados: cada item recebe o status Bom, Razoável ou Fraco.</p>
+</section>
+
+{% if r.summary %}
+<section class="items">
+  <h2>Itens analisados</h2>
+  <p class="intro">Do que mais precisa de atenção ao que está melhor.</p>
+  <div class="rows">
+  {% for g in r.groups %}{% for i in g["items"] %}
+    <div class="row st-{{ i.status }}"><span class="dot">{{ icon(i.status) }}</span>
+      {% if i.status == "good" %}<span class="t">{{ i.title }}</span>{% else %}<span class="t hidden" aria-hidden="true">{{ i.title | mask }}</span>{% endif %}
+      <span class="badge">{{ i.status_name }}</span></div>
+  {% endfor %}{% endfor %}
+  </div>
+  {% if r.counts.bad + r.counts.fair %}
+  <div class="cta"><strong>Quer saber o que ajustar?</strong><p>Os itens marcados como Fraco ou Razoável têm espaço para melhorar. Fale com a SealsPro para receber a análise completa, com o detalhe de cada item.</p></div>
+  {% endif %}
+</section>
+{% else %}
+<section class="items">
+  <h2>Itens analisados</h2>
+  <p class="intro">Do que mais precisa de atenção ao que está melhor. Em cada item, a barra mostra em que faixa ele está e o quadro abaixo traz a orientação.</p>
+  {% for g in r.groups %}
+  <div class="group st-{{ g.status }}">{{ icon(g.status) }}<h3>{{ g.name }}</h3><span class="n">{{ g["items"] | length }} {{ "item" if g["items"] | length == 1 else "itens" }} · {{ g.help }}</span></div>
+  {% for i in g["items"] %}
+  <article class="item st-{{ i.status }}">
+    <div class="item-head"><h3>{{ i.title }}</h3><span class="badge">{{ icon(i.status) }}{{ i.status_name }}</span></div>
+    <p class="sit">{{ i.situation }}</p>
+    <div class="band"><span class="s1"></span><span class="s2"></span><span class="s3"></span><i style="left: {{ i.marker }}%"></i></div>
+    <div class="band-legend"><span>Fraco</span><span>Razoável</span><span>Bom</span></div>
+    {% if i.advice %}<div class="advice {{ i.advice_kind }}"><strong>{{ "O que fazer" if i.advice_kind == "fazer" else "Como manter" }}</strong><p>{{ i.advice }}</p></div>{% endif %}
+  </article>
+  {% endfor %}
+  {% endfor %}
+</section>
+{% endif %}
+
+{% if r.evolution %}
+<section class="evolution">
+  <h2>Evolução da nota</h2>
+  <p>{{ r.evolution.sentence }}</p>
+  {{ chart_svg(r.evolution.chart) }}
+  <p class="small muted" style="margin-top: 3mm">{{ r.evolution.count }} análises feitas com os mesmos critérios de avaliação, em ordem cronológica.</p>
+</section>
+{% endif %}
+
+</body>
+</html>

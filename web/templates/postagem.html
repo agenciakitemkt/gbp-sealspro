@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block body %}
+{% if post and post.status == "publicando" %}<meta http-equiv="refresh" content="3">{% endif %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Postagens <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">
+    <a class="btn btn-secondary" href="/postagens?local={{ atual.id|urlencode }}&amp;mes={{ mes }}">Voltar ao calendário</a>
+  </div>
+</header>
+
+<main class="pt-main">
+  <section class="head">
+    <div>
+      <h1>{% if not post %}Nova postagem{% elif editable %}Editar postagem{% else %}Postagem{% endif %}</h1>
+      <p class="muted">{{ atual.title }} · Novidade</p>
+    </div>
+    {% if post %}{% set ds = display_status(post) %}{% set st = status[ds] %}
+    <span class="pt-tag pt-{{ st[1] }} pt-tag-big"><span class="pt-dot" aria-hidden="true"></span>{{ st[0] }}</span>
+    {% endif %}
+  </section>
+
+  {% if post %}
+    {% if post.status == "publicando" %}
+    <p class="notice" role="status"><span class="spinner" aria-hidden="true"></span><span>Publicando no Google… a página atualiza sozinha.</span></p>
+    {% elif post.status == "publicada" %}
+    <p class="notice pt-ok" role="status">{{ icon("good") }}<span>Publicada em {{ post.published_at|local_dt }}{% if late_minutes %} (com atraso de {% if late_minutes >= 120 %}{{ (late_minutes / 60)|round(0, "floor")|int }} h{% else %}{{ late_minutes }} min{% endif %}, o computador estava desligado ou dormindo){% endif %}.
+      {% if post.google_state == "PROCESSING" %}O Google ainda está processando; em geral entra no ar em menos de um minuto.{% endif %}
+      {% if post.search_url|safe_url %}<a href="{{ post.search_url|safe_url }}" target="_blank" rel="noopener noreferrer">Ver no Google</a>{% endif %}</span></p>
+    {% elif post.error %}
+    <p class="notice error" role="alert">{{ icon("bad") }}<span>{{ post.error }}
+      {% if post.error_kind == "login" %} Refaça o login no terminal: <code>./.venv/bin/python fase0.py login</code>{% endif %}
+      {% if display_status(post) == "nova tentativa" and post.next_try_at %} Nova tentativa às {{ post.next_try_at|local_time }}.{% endif %}</span></p>
+    {% endif %}
+  {% endif %}
+
+  {% if erros %}
+  <div class="notice error" role="alert">{{ icon("bad") }}<ul class="pt-errors">{% for e in erros %}<li>{{ e }}</li>{% endfor %}</ul></div>
+  {% endif %}
+
+  <div class="pt-editor">
+    <section class="card">
+    {% if editable %}
+      <form id="pt-form" method="post" action="/postagens/salvar" class="pt-form"
+            data-max="{{ max }}" data-sem-link="{{ cta_without_url|join(',') }}">
+        {% if post %}<input type="hidden" name="id" value="{{ post.id }}">{% else %}<input type="hidden" name="local" value="{{ atual.id }}">{% endif %}
+
+        <label class="pt-field" for="pt-texto">Texto da postagem</label>
+        <textarea id="pt-texto" name="texto" rows="9" maxlength="{{ max }}" required
+                  placeholder="Escreva a novidade: o que aconteceu, o que oferece, o convite para o cliente.">{{ v.texto }}</textarea>
+        <p class="pt-count muted" id="pt-count" aria-live="polite">{{ v.texto|length }}/{{ max }} caracteres</p>
+
+        <span class="pt-field">Imagem <span class="muted">(opcional; JPG ou PNG, de preferência 1200×900)</span></span>
+        <div class="pt-image">
+          <input type="hidden" name="imagem" id="pt-imagem" value="{{ v.imagem }}">
+          <label class="btn btn-secondary pt-upload" for="pt-arquivo">{{ "Trocar imagem" if v.imagem else "Escolher imagem" }}</label>
+          <input class="sr-only" type="file" id="pt-arquivo" accept="image/jpeg,image/png,image/webp">
+          <button type="button" class="btn btn-secondary" id="pt-remover"{% if not v.imagem %} hidden{% endif %}>Remover imagem</button>
+          <span class="muted" id="pt-img-status" role="status" aria-live="polite"></span>
+        </div>
+        <p class="muted pt-hint">A imagem também entra nas fotos do perfil (o Google exige isso para publicar).</p>
+
+        <div class="pt-grid">
+          <label class="pt-field">Botão
+            <select name="botao" id="pt-botao">
+              {% for key, label in cta_labels.items() %}<option value="{{ key }}" {% if key == v.botao %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </label>
+          <label class="pt-field" id="pt-url-wrap">Link do botão
+            <input type="url" name="url" id="pt-url" value="{{ v.url }}" maxlength="2000" placeholder="https://">
+          </label>
+        </div>
+        <p class="muted pt-hint" id="pt-call-hint" hidden>“Ligar agora” usa o telefone cadastrado no perfil.</p>
+
+        <fieldset class="pt-when">
+          <legend class="pt-field">Quando publicar</legend>
+          <label><input type="radio" name="quando" value="agendar" {% if v.quando != "agora" %}checked{% endif %}> Agendar para</label>
+          <input type="datetime-local" name="data_hora" id="pt-data" value="{{ v.data_hora }}" step="60">
+          <span class="muted">horário de Brasília</span>
+          <label><input type="radio" name="quando" value="agora" {% if v.quando == "agora" %}checked{% endif %}> Publicar agora</label>
+        </fieldset>
+
+        <div class="pt-actions">
+          <button class="btn" type="submit" id="pt-salvar">{{ "Salvar agendamento" if v.quando != "agora" else "Publicar agora" }}</button>
+          <a class="btn btn-secondary" href="/postagens?local={{ atual.id|urlencode }}">Cancelar</a>
+        </div>
+      </form>
+      {% if post %}
+      <div class="pt-actions pt-secondary-actions">
+        {% if post.status in ("atrasada", "falhou") %}
+        <form method="post" action="/postagens/publicar?id={{ post.id }}"><button class="btn btn-secondary" type="submit">Publicar agora como está</button></form>
+        {% endif %}
+        {% if deletable %}
+        <form method="post" action="/postagens/apagar?id={{ post.id }}" onsubmit="return confirm('Tirar esta postagem da fila?')"><button class="btn btn-danger" type="submit">Apagar agendamento</button></form>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% else %}
+      <dl class="pt-detail">
+        <dt>Agendada para</dt><dd>{{ post.scheduled_at|local_dt }}</dd>
+        {% if post.published_at %}<dt>Publicada em</dt><dd>{{ post.published_at|local_dt }}</dd>{% endif %}
+        <dt>Botão</dt><dd>{{ cta_labels.get(post.cta_type, "—") if post.cta_type else "Nenhum" }}{% if post.cta_url %} · {{ post.cta_url }}{% endif %}</dd>
+        <dt>Tentativas</dt><dd>{{ post.attempts }}</dd>
+      </dl>
+      <p class="pt-text">{{ post.summary }}</p>
+      {% if deletable %}
+      <form method="post" action="/postagens/apagar?id={{ post.id }}" onsubmit="return confirm('Tirar esta postagem da lista?')"><button class="btn btn-danger" type="submit">Apagar da lista</button></form>
+      {% endif %}
+    {% endif %}
+    </section>
+
+    <aside class="card pt-preview-card" aria-label="Pré-visualização">
+      <h2>Como fica no Google <span class="muted">(aproximado)</span></h2>
+      <article class="pt-preview">
+        <header><span class="pt-avatar" aria-hidden="true">{{ atual.title[:1] }}</span>
+          <span><strong>{{ atual.title }}</strong><br><small class="muted" id="pv-data">{{ pv_date }}</small></span></header>
+        <div class="pt-preview-img" id="pv-img-wrap"{% if not v.imagem %} hidden{% endif %}>
+          <img id="pv-img" alt="" src="{% if v.imagem %}/postagens/imagem/{{ v.imagem }}{% endif %}">
+        </div>
+        <p class="pt-preview-text" id="pv-texto">{{ v.texto }}</p>
+        <span class="pt-preview-btn" id="pv-botao"{% if not v.botao %} hidden{% endif %}>{{ cta_labels.get(v.botao, "") }}</span>
+      </article>
+    </aside>
+  </div>
+</main>
+{% if editable %}<script src="/static/postagens.js" defer></script>{% endif %}
+{% endblock %}

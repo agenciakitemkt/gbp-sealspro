@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Auditor de Perfil <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">
+    {% include "_picker.html" %}
+    {% include "_sync.html" %}
+    <a class="btn btn-secondary" href="/leads">Buscar leads</a>
+  </div>
+</header>
+
+<main id="resultado" aria-live="polite"{% if not atual %} hx-get="/" hx-trigger="syncDone from:body" hx-select="#resultado" hx-swap="outerHTML"{% endif %}>
+{% if not atual %}
+  <section class="card empty">
+    <h1>Nenhum local ativo</h1>
+    <p>Sincronize os locais da sua conta e deixe ao menos um ativo:</p>
+    <pre>./.venv/bin/python coletar.py sincronizar
+./.venv/bin/python coletar.py locais</pre>
+  </section>
+{% else %}
+  <section class="head">
+    <div>
+      <h1>{{ atual.title }}</h1>
+      <p class="muted">
+        {% if atual.account_name %}Conta: {{ atual.account_name }} · {% endif %}
+        {% if analise %}Última atualização: <time datetime="{{ analise.analyzed_at }}" title="{{ analise.analyzed_at }}">{{ analise.analyzed_at|age }}</time>
+        {% else %}Ainda sem análise guardada{% endif %}
+      </p>
+    </div>
+    <div class="head-actions">
+    {% if analise %}{% with pdf="/relatorio.pdf?local=" ~ (atual.id|urlencode), sim="/simulador?local=" ~ (atual.id|urlencode) %}{% include "_acoes.html" %}{% endwith %}{% endif %}
+    <a class="btn btn-secondary" href="/historico?local={{ atual.id|urlencode }}">Histórico</a>
+    <a class="btn btn-secondary" href="/postagens?local={{ atual.id|urlencode }}">Postagens</a>
+    <a class="btn btn-secondary" href="/ranking?local={{ atual.id|urlencode }}">Ranking{% if rankings_vencidos %} <span class="rk-count" title="Rankings com a última análise há mais de 30 dias">{{ rankings_vencidos }} para repetir</span>{% endif %}</a>
+    <button class="btn" type="button"
+            hx-post="/analisar?local={{ atual.id|urlencode }}" hx-target="#resultado" hx-select="#resultado"
+            hx-swap="outerHTML" hx-disabled-elt="this">
+      <span class="idle">{{ "Analisar de novo" if analise else "Analisar" }}</span>
+      <span class="busy" role="status"><span class="spinner" aria-hidden="true"></span>Analisando… pode levar alguns segundos</span>
+    </button>
+    </div>
+  </section>
+
+  {% if erro %}<p class="notice error" role="alert">{{ icon("bad") }}<span>{{ erro }}</span></p>{% endif %}
+
+  {% if not analise %}
+  <section class="card empty">
+    <h2>Este local ainda não foi analisado</h2>
+    <p>Clique em <strong>Analisar</strong> para coletar os dados do perfil no Google e calcular a nota.</p>
+  </section>
+  {% else %}
+  {% set r = analise.result %}{% set o = r.overall %}{% set loc = r.location %}
+  {% set gstatus = o.score|overall_status if o.score is not none else "unavailable" %}
+  <div class="layout">
+    <div class="col-main">
+      <section class="card summary" aria-label="Resumo da nota">
+        <div class="gauge-wrap">
+          {% with score=o.score, status=gstatus, bands=bands %}{% include "_gauge.html" %}{% endwith %}
+          <div class="gauge-read st-{{ gstatus }}">
+            <span class="gauge-num">{{ o.score if o.score is not none else "–" }}</span>
+            <span class="gauge-of">de 100</span>
+            <span class="badge st-{{ gstatus }}">{{ icon(gstatus) }}{{ gstatus|status_label }}</span>
+          </div>
+        </div>
+        <ul class="counters">
+          <li class="counter st-bad"><span class="counter-top">{{ icon("bad") }}<strong>{{ o.bad }}</strong></span><span class="counter-name">Fraco</span><span class="counter-sub">precisam de atenção</span></li>
+          <li class="counter st-fair"><span class="counter-top">{{ icon("fair") }}<strong>{{ o.fair }}</strong></span><span class="counter-name">Razoável</span><span class="counter-sub">podem melhorar</span></li>
+          <li class="counter st-good"><span class="counter-top">{{ icon("good") }}<strong>{{ o.good }}</strong></span><span class="counter-name">Bom</span><span class="counter-sub">em ótimo estado</span></li>
+        </ul>
+      </section>
+
+      {% if versao_antiga %}
+      <p class="notice error" role="alert">{{ icon("bad") }}<span><strong>Análise feita com uma versão anterior dos critérios.</strong> Clique em Analisar de novo antes de entregar ao cliente.</span></p>
+      {% endif %}
+      {% if o.unavailable %}
+      <p class="notice" role="note">{{ icon("unavailable") }}<span>{{ o.unavailable }} {{ "item ficou" if o.unavailable == 1 else "itens ficaram" }} sem avaliação porque a coleta falhou nessas partes. Eles não entram na nota nem nos contadores. Tente analisar de novo.</span></p>
+      {% endif %}
+
+      <section class="card" aria-labelledby="itens-titulo">
+        <h2 id="itens-titulo">Itens avaliados <span class="muted">· do pior para o melhor</span></h2>
+        {% set ns = namespace(shown=false) %}
+        <ol class="items">
+          {% for it in r["items"] %}
+            {% if it.status in ("unavailable", "not_applicable") and not ns.shown %}
+              {% set ns.shown = true %}
+              <li class="items-divider" aria-hidden="true">Fora da nota nesta análise</li>
+            {% endif %}
+            {% include "_item.html" %}
+          {% endfor %}
+        </ol>
+      </section>
+    </div>
+    <aside class="col-side">{% include "_perfil.html" %}</aside>
+  </div>
+  {% endif %}
+{% endif %}
+</main>
+{% endblock %}

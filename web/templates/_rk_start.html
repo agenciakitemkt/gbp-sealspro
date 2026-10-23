@@ -1,0 +1,33 @@
+{# Clique unico da Analise de Ranking: manda so o numero da analise (start_id) para a extensao (ext_id). Precisa de
+   button#rk-start e p#rk-start-msg na pagina; com `iniciar`, comeca sozinho e limpa o endereco (clean_url). #}
+<script>
+  // Clique unico: manda so o numero da analise para a extensao (o Chrome so deixa paginas de 127.0.0.1:8000 falarem
+  // com ela, ver externally_connectable no manifest). A extensao pergunta ao app, com o segredo, o que buscar.
+  (function () {
+    var msg = document.getElementById("rk-start-msg");
+    var button = document.getElementById("rk-start");
+    function start() {
+      if (!window.chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+        msg.textContent = "A extensão SealsPro não está disponível neste navegador (versão 0.5.3 ou mais nova). Use o caminho manual abaixo.";
+        return;
+      }
+      button.disabled = true;
+      msg.textContent = "Pedindo à extensão para abrir o Maps…";
+      chrome.runtime.sendMessage({{ ext_id|tojson }}, { type: "seals:ranking-run", id: {{ start_id|int }} }, function (r) {
+        button.disabled = false;
+        if (chrome.runtime.lastError || !r) {
+          msg.textContent = "A extensão não respondeu. Recarregue a extensão e esta página, ou use o caminho manual abaixo.";
+        } else if (!r.ok) {
+          msg.textContent = "Não foi possível: " + (r.error || "erro desconhecido");
+        } else {
+          msg.textContent = "Coletando no Google Maps (aba aberta pela extensão)…";
+        }
+      });
+    }
+    button.addEventListener("click", start);
+    {% if iniciar %}
+    history.replaceState(null, "", {{ clean_url|tojson }}); // recarregar nao inicia de novo
+    start();
+    {% endif %}
+  })();
+</script>

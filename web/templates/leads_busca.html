@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Busca de Leads <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">
+    {% if not favoritos %}<a class="btn btn-secondary" href="/leads/favoritos">★ Favoritos</a>{% endif %}
+    <a class="btn btn-secondary" href="/leads">Nova busca</a>
+  </div>
+</header>
+
+<main id="leads" class="rk-main ld-main">
+  <section class="head">
+    <div>
+      {% if favoritos %}
+      <h1>Leads favoritos</h1>
+      <p class="muted">Os negócios marcados com estrela, de todas as buscas.</p>
+      {% else %}
+      <h1>“{{ s.keyword }}” em {{ s.region_text }}</h1>
+      <p class="muted">Busca #{{ s.id }} · {{ scope.label|default(s.scope) }} ({{ s.grid_size }}×{{ s.grid_size }} pontos, até {{ s.pages }} páginas por ponto)
+        · <time datetime="{{ s.created_at }}">{{ s.created_at|age }}</time>
+        {% if res %} · <strong>{{ res.total }} leads</strong>{% endif %}</p>
+      {% endif %}
+    </div>
+    {% if not favoritos %}
+    <div class="head-actions">
+      {% if s.shown not in ("pendente", "coletando") %}
+      <form method="post" action="/leads/repetir?id={{ s.id }}"><button class="btn btn-secondary" type="submit">Repetir busca</button></form>
+      <form method="post" action="/leads/apagar?id={{ s.id }}" onsubmit="return confirm('Apagar esta busca? Notas e favoritos continuam.');"><button class="btn btn-secondary" type="submit">Apagar</button></form>
+      {% endif %}
+    </div>
+    {% endif %}
+  </section>
+
+  {% if s and s.shown in ("pendente", "coletando", "expirada") %}
+  <section class="card" id="ld-progress">
+    {% if s.shown == "expirada" %}
+    <p class="notice error" role="alert">{{ icon("bad") }}<span>Esta busca não foi iniciada a tempo. Use “Repetir busca”.</span></p>
+    {% else %}
+    <h2>{{ "Coletando no Google Maps" if s.shown == "coletando" else "Pronta para começar" }}</h2>
+    <p class="muted">{{ st.total }} pedidos (cerca de {{ minutes }} min). A extensão SealsPro abre a busca no Maps numa aba nova;
+      não feche essa aba até ela terminar. No fim, ela fecha sozinha e os leads aparecem aqui.</p>
+    <p><progress id="ld-bar" max="{{ st.total }}" value="{{ st.received }}"></progress>
+      <span id="ld-count">{{ st.received }} de {{ st.total }}</span></p>
+    {% if s.shown == "pendente" %}
+    <p><button class="btn" type="button" id="rk-start"{% if not ext_id %} disabled{% endif %}>Buscar no Google Maps</button>
+      <span id="rk-start-msg" class="muted" role="status">{% if not ext_id %}A extensão SealsPro não está configurada no app (coletar.py id-extensao).{% endif %}</span></p>
+    <form method="post" action="/leads/cancelar?id={{ s.id }}"><button class="btn btn-secondary" type="submit">Cancelar</button></form>
+    {% else %}
+    <p id="rk-start-msg" class="muted" role="status">Para cancelar, use o botão Cancelar na faixa da extensão, no Maps.</p>
+    {% endif %}
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if s and s.error %}<p class="notice error" role="alert">{{ icon("bad") }}<span>{{ s.error }}{% if res %} Os leads lidos até ali estão abaixo.{% endif %}</span></p>{% endif %}
+  {% if res and res.warning %}<p class="notice" role="note">{{ icon("fair") }}<span>{{ res.warning }}</span></p>{% endif %}
+
+  {% if data %}
+  <div class="ld-layout">
+    <aside class="card ld-filters" aria-label="Filtros">
+      <h2>Filtros <span class="muted" id="ld-shown"></span></h2>
+      <label class="ld-search"><span class="sr-only">Procurar</span><input type="search" id="ld-q" placeholder="Procurar nome, categoria, endereço, nota…"></label>
+      <fieldset class="ld-group" data-filter="phone"><legend>Telefone</legend>
+        <label><input type="radio" name="phone" value="" checked> Todos</label>
+        <label><input type="radio" name="phone" value="yes"> Tem</label>
+        <label><input type="radio" name="phone" value="no"> Não tem</label></fieldset>
+      <fieldset class="ld-group" data-filter="site"><legend>Site</legend>
+        <label><input type="radio" name="site" value="" checked> Todos</label>
+        <label><input type="radio" name="site" value="own"> Site próprio</label>
+        <label><input type="radio" name="site" value="social"> Só rede social</label>
+        <label><input type="radio" name="site" value="no"> Sem site</label></fieldset>
+      <fieldset class="ld-group" data-filter="verified"><legend>Perfil</legend>
+        <label><input type="radio" name="verified" value="" checked> Todos</label>
+        <label><input type="radio" name="verified" value="yes"> Verificado</label>
+        <label><input type="radio" name="verified" value="no"> Não verificado</label></fieldset>
+      <fieldset class="ld-group" data-filter="sab"><legend>Endereço</legend>
+        <label><input type="radio" name="sab" value="" checked> Todos</label>
+        <label><input type="radio" name="sab" value="no"> Com endereço</label>
+        <label><input type="radio" name="sab" value="yes"> Sem endereço (atende por área)</label></fieldset>
+      <fieldset class="ld-group"><legend>Outros</legend>
+        {% if data.region %}<label><input type="checkbox" id="ld-inside"> Só dentro da região</label>{% endif %}
+        <label><input type="checkbox" id="ld-hours"> Sem horário</label>
+        <label><input type="checkbox" id="ld-multicat"> Com categorias adicionais</label>
+        <label><input type="checkbox" id="ld-noted"> Com nota da SealsPro</label>
+        <label><input type="checkbox" id="ld-fav"> Só favoritos</label>
+        <label><input type="checkbox" id="ld-pre"> Já tem pré análise</label></fieldset>
+      <fieldset class="ld-group ld-range"><legend>Média das avaliações</legend>
+        <label>de <input type="number" id="ld-rmin" min="0" max="5" step="0.1" inputmode="decimal"></label>
+        <label>até <input type="number" id="ld-rmax" min="0" max="5" step="0.1" inputmode="decimal"></label></fieldset>
+      <fieldset class="ld-group ld-range"><legend>Quantidade de avaliações</legend>
+        <label>de <input type="number" id="ld-cmin" min="0" step="1" inputmode="numeric"></label>
+        <label>até <input type="number" id="ld-cmax" min="0" step="1" inputmode="numeric"></label></fieldset>
+      <fieldset class="ld-group ld-range"><legend>Qualidade estimada</legend>
+        <label>de <input type="number" id="ld-qmin" min="0" max="100" step="1" inputmode="numeric"></label>
+        <label>até <input type="number" id="ld-qmax" min="0" max="100" step="1" inputmode="numeric"></label></fieldset>
+      <button class="btn btn-secondary" type="button" id="ld-clear">Limpar filtros</button>
+      <div id="ld-words" class="ld-words" aria-label="Palavras mais comuns nos nomes"></div>
+    </aside>
+
+    <section class="ld-results">
+      <div class="card ld-toolbar">
+        <label>Ordenar por
+          <select id="ld-sort">
+            <option value="quality">Qualidade estimada</option>
+            <option value="rating">Média das avaliações</option>
+            <option value="reviews">Quantidade de avaliações</option>
+            <option value="name">Nome</option>
+            <option value="order">Ordem da busca</option>
+          </select></label>
+        <button class="btn btn-secondary" type="button" id="ld-dir" aria-label="Inverter a ordem">↑ menor primeiro</button>
+        <div class="pt-tabs ld-views" role="tablist">
+          <a href="#cartoes" data-view="cards" role="tab">Cartões</a>
+          <a href="#tabela" data-view="table" role="tab">Tabela</a>
+          <a href="#mapa" data-view="map" role="tab">Mapa</a>
+        </div>
+        <details class="menu ld-csv">
+          <summary class="btn">Baixar planilha</summary>
+          <div class="menu-list">
+            <a href="#" data-csv="filtered">Só os filtrados <small>na ordem da tela</small></a>
+            <a href="#" data-csv="all">Todos os leads</a>
+          </div>
+        </details>
+      </div>
+      <p class="muted ld-hint">Qualidade estimada: telefone, site, horário, logotipo, verificado, quantidade e média de avaliações,
+        com os critérios da Pré Análise. Perfis com nota baixa costumam ser os melhores leads. A busca não traz a descrição,
+        as postagens nem as fotos: a pré análise do lead mede tudo.</p>
+      <div id="ld-cards" class="ld-cards"></div>
+      <p id="ld-more-wrap" hidden><button class="btn btn-secondary" type="button" id="ld-more">Mostrar mais</button></p>
+      <div id="ld-table" class="card table-wrap" hidden></div>
+      <div id="ld-map" class="card ld-map" hidden></div>
+    </section>
+  </div>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script id="ld-data" type="application/json">{{ data|tojson }}</script>
+  <script src="/static/leads.js" defer></script>
+  {% endif %}
+</main>
+
+{% if s and s.shown in ("pendente", "coletando") %}
+<script>
+  (function () {
+    var msg = document.getElementById("rk-start-msg");
+    var button = document.getElementById("rk-start");
+    var bar = document.getElementById("ld-bar"), count = document.getElementById("ld-count");
+    // Andamento: a tela consulta o app enquanto a extensao coleta; no fim, recarrega com os leads.
+    var last = {{ s.shown|tojson }};
+    function poll() {
+      fetch("/leads/status?id={{ s.id }}").then(function (r) { return r.json(); }).then(function (st) {
+        bar.max = st.total; bar.value = st.received; count.textContent = st.received + " de " + st.total;
+        if (st.status !== last && st.status !== "pendente") { location.replace("/leads/busca?id={{ s.id }}"); return; }
+        setTimeout(poll, 2000);
+      }).catch(function () { setTimeout(poll, 4000); });
+    }
+    setTimeout(poll, 2000);
+    if (!button) return;
+    // Clique unico: manda so o numero da busca para a extensao (o Chrome so deixa paginas de 127.0.0.1:8000 falarem
+    // com ela, ver externally_connectable no manifest). A extensao pergunta ao app, com o segredo, o que buscar.
+    function start() {
+      if (!window.chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+        msg.textContent = "A extensão SealsPro não está disponível neste navegador (versão 0.6.0 ou mais nova).";
+        return;
+      }
+      button.disabled = true;
+      msg.textContent = "Pedindo à extensão para abrir o Maps…";
+      chrome.runtime.sendMessage({{ ext_id|tojson }}, { type: "seals:leads-run", id: {{ s.id|int }} }, function (r) {
+        button.disabled = false;
+        if (chrome.runtime.lastError || !r) {
+          msg.textContent = "A extensão não respondeu. Recarregue a extensão (versão 0.6.0 ou mais nova) e esta página.";
+        } else if (!r.ok) {
+          msg.textContent = "Não foi possível: " + (r.error || "erro desconhecido");
+        } else {
+          msg.textContent = "Coletando no Google Maps (aba aberta pela extensão)…";
+          last = "coletando";
+          button.hidden = true;
+        }
+      });
+    }
+    button.addEventListener("click", start);
+    {% if iniciar and ext_id %}
+    history.replaceState(null, "", "/leads/busca?id={{ s.id }}"); // recarregar nao inicia de novo
+    start();
+    {% endif %}
+  })();
+</script>
+{% endif %}
+{% endblock %}

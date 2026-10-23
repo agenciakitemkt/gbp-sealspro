@@ -1,0 +1,133 @@
+{# PDF da Analise de Ranking (CLAUDE.md, 16, fase R5), para o cliente. A4; so o fundo do mapa vem da internet, ja
+   embutido (data URI). Pontos sem leitura aparecem como "?" e nao ganham explicacao: problemas ficam so na tela. #}
+{% set kicker = "Ranking no Google Maps" %}{% set date_label = r.date_label %}
+{% macro n(v) %}{{ ("%g"|format(v|round(1)))|replace(".", ",") if v is not none else "–" }}{% endmacro %}
+{% macro pct(v) %}{{ (v|round|int) if v is not none else "–" }}%{% endmacro %}
+{% macro pc(p, unread=false, off=false) %}{% if off %}poff{% elif unread %}p0{% elif p is none %}p4{% elif p <= 3 %}p1{% elif p <= 10 %}p2{% else %}p3{% endif %}{% endmacro %}
+{% macro mini_chart(c, title) -%}
+<figure class="mini"><figcaption>{{ title }}</figcaption>
+<svg class="chart" viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ title }}">
+  {% for g in c.grid %}<line class="grid" x1="{{ c.left }}" x2="{{ c.right }}" y1="{{ g.y }}" y2="{{ g.y }}"/>
+  <text class="tick" x="{{ c.left - 6 }}" y="{{ g.y + 4 }}" text-anchor="end">{{ g.label }}</text>{% endfor %}
+  {% if c.n > 1 %}<polyline class="trend" points="{{ c.line }}"/>{% endif %}
+  {% for p in c.points %}<circle class="pt" cx="{{ p.x }}" cy="{{ p.y }}" r="4.5"/>
+  <text class="pt-label" x="{{ p.x }}" y="{{ p.y - 9 if p.y - 9 > c.top else p.y + 17 }}" text-anchor="middle">{{ n(p.value) }}</text>{% endfor %}
+  {% for xl in c.xlabels %}<text class="tick" x="{{ xl.x }}" y="{{ c.height - 12 }}" text-anchor="middle">{{ xl.date }}</text>{% endfor %}
+</svg></figure>
+{%- endmacro %}
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>{{ kicker }} · {{ r.location.name }}</title>
+{% include "_estilo.html" %}
+<style>
+.cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; }
+.cards div { background: var(--surface); border: .3mm solid var(--line); border-radius: 3mm; padding: 3mm 4mm; }
+.cards .k { font-size: 8pt; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.cards .v { font: 700 20pt/1.1 "Space Grotesk", sans-serif; margin-top: 1mm; color: var(--green); }
+.cards .h { font-size: 8pt; color: var(--muted); margin-top: 1mm; }
+.lead { margin-top: 7mm; }
+.map { position: relative; overflow: hidden; width: {{ r.map.width }}px; height: {{ r.map.height }}px; margin-top: 7mm;
+       border-radius: 3mm; border: .3mm solid var(--line); background: #1B1F22; break-inside: avoid; }
+.map img { position: absolute; width: 256px; height: 256px; }
+.map .pin { position: absolute; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center; font: 700 11px Inter, sans-serif;
+            border: 2px solid #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .5); }
+.map .attr { position: absolute; right: 2px; bottom: 1px; font-size: 7pt; color: #333; background: rgb(255 255 255 / .75); padding: 0 3px; }
+.p1 { background: #1F9D55; color: #fff; } .p2 { background: #F2C230; color: #111; } .p3 { background: #F08A24; color: #111; }
+.p4 { background: #D33D44; color: #fff; } .p0 { background: #8A949A; color: #fff; }
+.poff { background: rgb(40 44 46 / .55); color: #ddd; border-style: dashed !important; }
+.legend { display: flex; gap: 5mm; margin-top: 2.5mm; font-size: 8.5pt; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 1.5mm; } .legend i { width: 3mm; height: 3mm; border-radius: 50%; display: inline-block; }
+.cgrid { display: grid; gap: 1.6mm; grid-template-columns: repeat({{ r.grid_size }}, 9mm); margin-top: 3mm; }
+.cgrid span { width: 9mm; height: 9mm; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 700 8.5pt Inter, sans-serif; }
+.comp { width: 100%; border-collapse: separate; border-spacing: 0 1.4mm; }
+.comp th, .comp td { padding: 2.2mm 3mm; background: var(--surface); text-align: right; font-size: 9pt; white-space: nowrap; overflow-wrap: normal; }
+.comp td.name { text-align: left; font-weight: 600; white-space: normal; overflow-wrap: anywhere; width: 100%; } .comp td:first-child { border-radius: 2.5mm 0 0 2.5mm; color: var(--muted); }
+.comp td:last-child { border-radius: 0 2.5mm 2.5mm 0; }
+.comp thead th { background: none; font-size: 7.5pt; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 400; padding-top: 0; padding-bottom: 0; }
+.comp thead th.name { text-align: left; }
+.comp tr.own td { background: #0F1A14; color: var(--green); }
+.page { break-before: page; }
+.explain { display: grid; gap: 2mm; margin-top: 6mm; font-size: 9pt; color: var(--muted); }
+.explain strong { color: var(--text); }
+.minis { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+.mini { margin: 0; } .mini figcaption { font-size: 9pt; color: var(--muted); margin-bottom: 2mm; }
+</style>
+</head>
+<body>
+
+<section class="cover">
+  <img class="cover-logo" src="{{ a.logo }}" alt="SealsPro">
+  <div class="cover-main">
+    <p class="kicker">{{ kicker }}</p>
+    <h1>{{ r.location.name }}</h1>
+    <p class="cover-meta">Busca por “{{ r.keyword }}”{% if r.location.city %} · {{ r.location.city }}{% endif %}</p>
+    <p class="cover-date">{{ r.date }}</p>
+  </div>
+  <img class="cover-symbol" src="{{ a.symbol }}" alt="">
+  <p class="cover-by">Preparado pela SealsPro</p>
+</section>
+
+<section>
+  <h2>Onde o perfil aparece</h2>
+  <div class="cards">
+    <div><p class="k">Aparece em</p><p class="v">{{ r.own.found }} de {{ r.own.points }}</p><p class="h">pontos, entre os 20 primeiros</p></div>
+    <div><p class="k">No top 3</p><p class="v">{{ pct(r.own.solv) }}</p><p class="h">dos pontos</p></div>
+    <div><p class="k">Posição onde aparece</p><p class="v">{{ n(r.own.arp) }}</p><p class="h">média{% if r.own.arp is none %} (não apareceu){% endif %}</p></div>
+    <div><p class="k">Posição geral</p><p class="v">{{ n(r.own.atrp) }}</p><p class="h">média em todos os pontos</p></div>
+  </div>
+  <p class="lead">Simulamos a busca por <strong>“{{ r.keyword }}”</strong> no Google Maps a partir de {{ r.own.points }} pontos em volta do negócio, numa área de {{ r.radius }} para cada lado.
+    {% if r.own.found == 0 %}Em nenhum deles o perfil apareceu entre os 20 primeiros resultados.
+    {% else %}O perfil apareceu entre os 20 primeiros em <strong>{{ r.own.found }}</strong> {{ "ponto" if r.own.found == 1 else "pontos" }}{% if r.own.solv %} e entre os 3 primeiros em {{ pct(r.own.solv) }} deles{% endif %}.{% endif %}
+    {% if r.own_rank %}Entre todos os {{ r.competitors_total }} negócios encontrados, o perfil ficou em {{ r.own_rank }}º.{% endif %}</p>
+
+  <div class="map">
+    {% for t in r.map.tiles %}<img src="{{ t.src }}" style="left: {{ t.left }}px; top: {{ t.top }}px" alt="">{% endfor %}
+    {% for c in r.cells %}{% set p = r.map.points[loop.index0] %}
+    <span class="pin {{ pc(c.pos, c.unread, c.off) }}" style="left: {{ p.x }}px; top: {{ p.y }}px; width: {{ r.map.pin }}px; height: {{ r.map.pin }}px; margin: -{{ r.map.pin / 2 }}px 0 0 -{{ r.map.pin / 2 }}px; font-size: {{ r.map.font }}px">{% if c.off %}–{% elif c.unread %}?{% else %}{{ c.pos if c.pos is not none else "20+" }}{% endif %}</span>
+    {% endfor %}
+    {% if r.map.has_tiles %}<span class="attr">© OpenStreetMap</span>{% endif %}
+  </div>
+  <div class="legend"><span><i class="p1"></i>1º a 3º</span><span><i class="p2"></i>4º a 10º</span><span><i class="p3"></i>11º a 20º</span><span><i class="p4"></i>fora dos 20 (20+)</span></div>
+  <div class="explain">
+    <p><strong>Como ler:</strong> cada círculo é um ponto do mapa de onde alguém poderia buscar “{{ r.keyword }}”. O número é a posição do perfil na lista do Google Maps vista dali.</p>
+  </div>
+</section>
+
+<section class="page">
+  <h2>Quem aparece na frente</h2>
+  <p class="intro">Os {{ r.competitors|length }} negócios mais bem posicionados nessa busca, somando todos os pontos.</p>
+  <table class="comp">
+    <thead><tr><th>#</th><th class="name">Negócio</th><th>Nota</th><th>Avaliações</th><th>Aparece em</th><th>No top 3</th><th>Posição geral</th></tr></thead>
+    <tbody>
+    {% for c in r.competitors %}
+      <tr{% if c.own %} class="own"{% endif %}><td>{{ loop.index }}</td><td class="name">{{ c.name }}</td><td>{{ n(c.rating) }}</td><td>{{ c.reviews if c.reviews is not none else "–" }}</td>
+        <td>{{ c.found }}/{{ c.points }}</td><td>{{ pct(c.solv) }}</td><td>{{ n(c.atrp) }}</td></tr>
+    {% endfor %}
+    {% if r.own_row %}{% set c = r.own_row %}
+      <tr class="own"><td>{{ r.own_rank }}</td><td class="name">{{ c.name }}</td><td>{{ n(c.rating) }}</td><td>{{ c.reviews if c.reviews is not none else "–" }}</td>
+        <td>{{ c.found }}/{{ c.points }}</td><td>{{ pct(c.solv) }}</td><td>{{ n(c.atrp) }}</td></tr>
+    {% endif %}
+    </tbody>
+  </table>
+  <div class="explain">
+    <p><strong>Aparece em:</strong> em quantos pontos o negócio está entre os 20 primeiros. <strong>No top 3:</strong> em que parte dos pontos ele está entre os 3 primeiros, a parte mais vista da lista.</p>
+    <p><strong>Posição geral:</strong> posição média em todos os pontos, contando como 21 onde o negócio não aparece. Quanto menor, melhor.</p>
+  </div>
+
+  {% if r.evolution %}
+  <div class="evolution">
+    <h2>Evolução</h2>
+    <div class="minis">
+      {{ mini_chart(r.evolution.charts[0], "Posição geral (quanto mais alto no gráfico, melhor)") }}
+      {{ mini_chart(r.evolution.charts[1], "Pontos no top 3 (%)") }}
+    </div>
+  </div>
+  {% endif %}
+
+  <p class="footnote">Critérios próprios da SealsPro. A busca foi feita sem login, em cada ponto da grade (raio de {{ r.radius }}, grade {{ r.grid_size }}×{{ r.grid_size }}, mapa com {{ r.view }} de área visível em cada ponto). O resultado que cada pessoa vê pode variar com o aparelho, o histórico de buscas e o lugar exato de onde ela busca.</p>
+</section>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{# Seletor de locais ativos. Recarrega sozinho quando a sincronizacao termina. #}
+<form class="picker" id="picker" onsubmit="return false"
+      hx-get="/seletor" hx-trigger="syncDone from:body" hx-include="#local" hx-swap="outerHTML">
+  <label for="local">Local</label>
+  {% if locais %}
+  <select id="local" name="local" hx-get="{{ picker_url or '/' }}" hx-target="{{ picker_target or '#resultado' }}" hx-select="{{ picker_target or '#resultado' }}" hx-swap="outerHTML" hx-push-url="true">
+    {% for l in locais %}
+    <option value="{{ l.id }}" {% if atual and l.id == atual.id %}selected{% endif %}>{{ l.title }}{% if l.city %} · {{ l.city }}{% endif %}</option>
+    {% endfor %}
+  </select>
+  {% else %}
+  <select id="local" name="local" disabled><option>Nenhum local ativo</option></select>
+  {% endif %}
+</form>

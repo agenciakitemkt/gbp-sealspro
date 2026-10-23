@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block body %}
+<header class="topbar"><div class="brand"><span class="brand-mark" aria-hidden="true"></span>Auditor de Perfil</div></header>
+<main>
+  <p class="notice error" role="alert">{{ icon("bad") }}<span>{{ mensagem }}</span></p>
+  <p><a href="{% if local %}/?local={{ local | urlencode }}{% else %}/{% endif %}">Voltar à análise</a></p>
+</main>
+{% endblock %}

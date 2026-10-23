@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% from "_rk_macros.html" import n, rk_grid %}
+{% set LABELS = {"found": "Encontrado em", "arp": "ARP (posição média onde aparece)", "atrp": "ATRP (posição média em todos os pontos)", "solv": "SoLV (pontos no top 3)"} %}
+{% macro val(m, v, total) %}{% if v is none %}–{% elif m == "found" %}{{ v }} de {{ total }}{% elif m == "solv" %}{{ n(v) }}%{% else %}{{ n(v) }}{% endif %}{% endmacro %}
+{% macro arrow(t) %}{% if t == "better" %}<span class="rk-better">▲ melhorou</span>{% elif t == "worse" %}<span class="rk-worse">▼ piorou</span>{% else %}<span class="muted">igual</span>{% endif %}{% endmacro %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Análise de Ranking <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">{% if local %}<a class="btn btn-secondary" href="/ranking?local={{ local.id|urlencode }}">Voltar ao ranking</a>{% endif %}</div>
+</header>
+<main class="rk-main">
+{% if erro %}
+  <p class="notice error" role="alert">{{ icon("bad") }}<span>{{ erro }}</span></p>
+{% else %}
+  {% set a, b = c.a, c.b %}
+  <section class="head"><div>
+    <h1>{{ local.title if local else b.name }}</h1>
+    <p class="muted">“{{ b.keyword }}” · grade {{ b.grid_size }}×{{ b.grid_size }} · raio {{ (b.radius_m / 1000)|string|replace(".0", "")|replace(".", ",") }} km · zoom {{ (b.view_m / 1000)|int }} km ·
+      antes: {{ a.created_at|local_dt }} (#{{ a.id }}) · depois: {{ b.created_at|local_dt }} (#{{ b.id }})</p>
+  </div></section>
+  <p class="rk-repeat"><a class="btn" href="/ranking/comparativo.pdf?a={{ a.id }}&amp;b={{ b.id }}">Baixar comparativo (PDF)</a>
+    <span class="muted">Para entregar ao cliente: números, os dois mapas e os concorrentes.</span></p>
+  {% if c.center_moved_m %}<p class="notice" role="note">{{ icon("unavailable") }}<span>O pin do perfil no Maps mudou cerca de {{ c.center_moved_m }} m entre as duas análises: a grade também andou. A comparação ponto a ponto é aproximada.</span></p>{% endif %}
+
+  <section class="card">
+    <h2>Números do perfil</h2>
+    <div class="table-wrap"><table class="history">
+      <thead><tr><th>Métrica</th><th class="num">Antes</th><th class="num">Depois</th><th class="num">Diferença</th><th></th></tr></thead>
+      <tbody>
+      {% for m in c.metrics %}
+        <tr><th>{{ LABELS[m.metric] }}</th>
+          <td class="num">{{ val(m.metric, m.a, a.result.own.points) }}</td>
+          <td class="num">{{ val(m.metric, m.b, b.result.own.points) }}</td>
+          <td class="num">{% if m.delta is not none %}{{ "+" if m.delta > 0 else "" }}{{ n(m.delta) }}{% if m.metric == "solv" %} p.p.{% endif %}{% else %}–{% endif %}</td>
+          <td>{{ arrow(m.trend) }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <p class="muted rk-help">Em ARP e ATRP, número menor é melhor (1 = primeiro lugar). Pontos: {{ c.counts.better }} melhoraram, {{ c.counts.worse }} pioraram, {{ c.counts.same }} ficaram iguais{% if c.counts.unread %}, {{ c.counts.unread }} sem leitura{% endif %}{% if c.counts.off %}, {{ c.counts.off }} desligados{% endif %}.</p>
+  </section>
+
+  <section class="card">
+    <h2>Posição em cada ponto</h2>
+    <div class="rk-pair">
+      <div><h3>Antes</h3>{{ rk_grid(a.grid_size, a.result.own.positions, a.result.unread, a.result.get("disabled", [])) }}</div>
+      <div><h3>Depois</h3>{{ rk_grid(b.grid_size, b.result.own.positions, b.result.unread, b.result.get("disabled", [])) }}</div>
+      <div><h3>O que mudou</h3>
+        <div class="rk-grid" style="--n: {{ b.grid_size }}">
+          {% for row in range(b.grid_size - 1, -1, -1) %}{% for col in range(b.grid_size) %}{% set p = c.points[row * b.grid_size + col] %}
+          <span class="rk-cell rk-t-{{ p.trend }}" title="{{ p.a if p.a is not none else '20+' }} → {{ p.b if p.b is not none else '20+' }}">{% if p.trend == "better" %}▲{% elif p.trend == "worse" %}▼{% elif p.trend == "unread" %}?{% elif p.trend == "off" %}–{% else %}={% endif %}</span>
+          {% endfor %}{% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Principais concorrentes agora</h2>
+    <div class="table-wrap"><table class="history">
+      <thead><tr><th>Local</th><th class="num">ATRP antes</th><th class="num">ATRP depois</th><th class="num">SoLV antes</th><th class="num">SoLV depois</th><th></th></tr></thead>
+      <tbody>
+      {% for r in c.competitors %}
+        <tr{% if r.own %} class="rk-own-row"{% endif %}><td>{{ r.name }}{% if r.new %} <span class="muted">(não aparecia antes)</span>{% endif %}</td>
+          <td class="num">{{ n(r.a_atrp) }}</td><td class="num">{{ n(r.b_atrp) }}</td>
+          <td class="num">{{ n(r.a_solv) }}{% if r.a_solv is not none %}%{% endif %}</td><td class="num">{{ n(r.b_solv) }}%</td>
+          <td>{{ arrow(r.trend) if not r.new else "" }}</td></tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+  </section>
+{% endif %}
+</main>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Busca de Leads <span class="brand-sub">SealsPro</span></div>
+  <div class="tools">
+    <a class="btn btn-secondary" href="/leads/favoritos">★ Favoritos ({{ favorites }})</a>
+    <a class="btn btn-secondary" href="/">Análise Completa</a>
+  </div>
+</header>
+
+<main id="leads" class="rk-main">
+  <section class="head">
+    <div>
+      <h1>Buscar negócios no Google Maps</h1>
+      <p class="muted">Todos os negócios de um segmento numa região, com a qualidade estimada do perfil de cada um, para prospectar.</p>
+    </div>
+  </section>
+
+  {% if erro %}<p class="notice error" role="alert">{{ icon("bad") }}<span>{{ erro }}</span></p>{% endif %}
+
+  <section class="card">
+    <h2>Nova busca</h2>
+    <form class="rk-form" method="post" action="/leads/nova">
+      <label class="rk-field rk-kw">Palavra-chave
+        <input name="palavra" required maxlength="{{ cfg.KEYWORD_MAX }}" placeholder="ex.: dentista, salão de beleza" value="{{ palavra }}">
+      </label>
+      <label class="rk-field rk-kw">Região <span class="muted">(cidade, bairro ou rua)</span>
+        <input name="regiao" required maxlength="{{ cfg.REGION_MAX }}" placeholder="ex.: Savassi, Belo Horizonte - MG" value="{{ regiao }}">
+      </label>
+      <label class="rk-field">Abrangência
+        <select name="abrangencia">
+          {% for sc in scopes %}<option value="{{ sc.id }}" {% if sc.id == abrangencia %}selected{% endif %}>{{ sc.label }} ({{ sc.grid }}×{{ sc.grid }} pontos, até {{ sc.grid * sc.grid * sc.pages * 20 }} resultados, ~{{ sc.minutes }} min)</option>{% endfor %}
+        </select>
+      </label>
+      <div class="form-actions"><button class="btn" type="submit">Buscar leads</button></div>
+    </form>
+    <p class="muted rk-help">O app localiza a região no mapa e espalha uma grade de pontos sobre ela. A extensão SealsPro abre a busca
+      no Google Maps numa aba nova e lê até 3 páginas de resultados em cada ponto, com pausa de 1 a 2 segundos entre os pedidos.
+      No fim, a aba fecha e os leads aparecem aqui, sem repetir. Use <strong>Rápida</strong> para um bairro e
+      <strong>Ampla</strong> ou <strong>Muito ampla</strong> para uma cidade grande.</p>
+  </section>
+
+  <section class="card">
+    <h2>Buscas anteriores</h2>
+    {% if not searches %}
+    <p class="muted">Nenhuma busca ainda.</p>
+    {% else %}
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Palavra-chave</th><th>Região</th><th>Data</th><th class="num">Leads</th><th>Situação</th></tr></thead>
+        <tbody>
+        {% for s in searches %}
+          <tr>
+            <td><a href="/leads/busca?id={{ s.id }}">#{{ s.id }}</a></td>
+            <td><a href="/leads/busca?id={{ s.id }}">{{ s.keyword }}</a></td>
+            <td>{{ s.region_text }}</td>
+            <td><time datetime="{{ s.created_at }}">{{ s.created_at|age }}</time></td>
+            <td class="num">{{ s.total if s.total is not none else "–" }}</td>
+            <td>{{ labels.get(s.shown, s.shown) }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

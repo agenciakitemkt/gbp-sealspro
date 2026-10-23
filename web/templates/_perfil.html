@@ -1,0 +1,37 @@
+{% from "_macros.html" import stars %}
+<section class="card profile" aria-labelledby="perfil-titulo">
+  <h2 id="perfil-titulo">{{ loc.name }}</h2>
+  <p class="rating">
+    <strong>{{ loc.rating | string | replace(".", ",") }}</strong>
+    {{ stars(loc.rating) }}
+    <span class="muted">{{ loc.reviewCount }} avaliaç{{ "ão" if loc.reviewCount == 1 else "ões" }}</span>
+  </p>
+  <p class="muted">{{ loc.category }}{% if loc.city %} · {{ loc.city }}{% endif %}</p>
+  <p class="links">
+    {% if loc.searchUrl.startswith("https://") %}<a href="{{ loc.searchUrl }}" target="_blank" rel="noopener noreferrer">Ver na Pesquisa</a>{% endif %}
+    {% if loc.mapsUrl.startswith("https://") %}<a href="{{ loc.mapsUrl }}" target="_blank" rel="noopener noreferrer">Ver no Maps</a>{% endif %}
+  </p>
+
+  <dl class="facts">
+    {% if loc.description %}
+    <dt>Descrição</dt>
+    <dd><details><summary>{{ loc.description[:120] }}{% if loc.description|length > 120 %}…{% endif %}</summary>{{ loc.description }}</details></dd>
+    {% endif %}
+    <dt>Endereço</dt><dd>{{ loc.address or "Não informado" }}</dd>
+    <dt>Telefone</dt><dd>{{ loc.phone or "Não informado" }}</dd>
+    <dt>Horário</dt>
+    <dd>{% if loc.hours %}<ul class="hours">{% for days, text in loc.hours|hours %}<li><span>{{ days }}</span> {{ text }}</li>{% endfor %}</ul>{% else %}Não informado{% endif %}</dd>
+  </dl>
+
+  <h3 class="dist-title">Distribuição de estrelas</h3>
+  <ul class="dist">
+    {% for count in loc.starDistribution %}
+    {% set star = 5 - loop.index0 %}
+    <li>
+      <span class="dist-label">{{ star }} ★</span>
+      <span class="dist-bar" role="img" aria-label="{{ count }} avaliações de {{ star }} estrelas"><span style="width: {{ (100 * count / loc.reviewCount) if loc.reviewCount else 0 }}%"></span></span>
+      <span class="dist-count">{{ count }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>

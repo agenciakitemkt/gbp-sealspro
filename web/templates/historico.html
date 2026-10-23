@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Auditor de Perfil <span class="brand-sub">Histórico</span></div>
+  <div class="tools">
+    {% include "_picker.html" %}
+  </div>
+</header>
+
+<main id="historico">
+{% if not atual %}
+  <section class="card empty"><h1>Nenhum local ativo</h1><p>Sincronize os locais na tela principal.</p></section>
+{% else %}
+  <section class="head">
+    <div>
+      <h1>Evolução: {{ atual.title }}</h1>
+      <p class="muted">{{ analyses | length }} análise(s) guardada(s) · Análise Completa</p>
+    </div>
+    <a class="btn btn-secondary" href="/?local={{ atual.id | urlencode }}">Voltar à análise atual</a>
+  </section>
+
+  {% if not analyses %}
+  <section class="card empty"><h2>Nenhuma análise guardada para este local</h2>
+    <p>Clique em Analisar na tela principal. Para criar o histórico a partir das coletas antigas: <code>./.venv/bin/python coletar.py retroativas</code></p></section>
+  {% else %}
+  <section class="card" aria-labelledby="grafico-titulo">
+    <h2 id="grafico-titulo">Nota geral ao longo do tempo</h2>
+    {% include "_chart.html" %}
+  </section>
+
+  <section class="card" aria-labelledby="linha-titulo">
+    <h2 id="linha-titulo">Linha do tempo</h2>
+    <form method="get" action="/comparar">
+      <div class="table-wrap">
+      <table class="timeline">
+        <thead><tr>
+          <th scope="col">A (antes)</th><th scope="col">B (depois)</th>
+          <th scope="col">Data da análise</th><th scope="col">Tipo</th><th scope="col" class="num">Nota geral</th>
+          <th scope="col" class="num">Fraco</th><th scope="col" class="num">Razoável</th><th scope="col" class="num">Bom</th>
+          <th scope="col" class="num">Indisp.</th><th scope="col">Versão do motor e do config</th><th scope="col">PDF desta análise</th>
+        </tr></thead>
+        <tbody>
+        {% for a in rows %}
+        <tr>
+          <td><input type="radio" name="a" value="{{ a.id }}" aria-label="Usar a análise de {{ a.analyzed_at | local_dt }} como A (antes)" {% if loop.index == 2 %}checked{% endif %}></td>
+          <td><input type="radio" name="b" value="{{ a.id }}" aria-label="Usar a análise de {{ a.analyzed_at | local_dt }} como B (depois)" {% if loop.first %}checked{% endif %}></td>
+          <td><time datetime="{{ a.analyzed_at }}">{{ a.analyzed_at | local_dt }}</time> <span class="muted">#{{ a.id }}</span></td>
+          <td><span class="kind kind-{{ a.kind }}"><svg width="14" height="14" aria-hidden="true"><circle class="pt pt-{{ a.kind }}" cx="7" cy="7" r="4.5"/></svg>{{ a.kind | kind_label }}</span></td>
+          <td class="num"><strong>{{ a.score if a.score is not none else "–" }}</strong></td>
+          <td class="num">{{ a.bad }}</td><td class="num">{{ a.fair }}</td><td class="num">{{ a.good }}</td><td class="num">{{ a.unavailable }}</td>
+          <td>{{ a | version_label }}</td>
+          <td>{% if a.kind == "real" %}{% set pdf = "/relatorio.pdf?local=" ~ (atual.id | urlencode) ~ "&analise=" ~ a.id %}<a href="{{ pdf }}">Completo</a> · <a href="{{ pdf }}&amp;modo=resumo">Resumido</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+      {% if analyses | length > 1 %}
+      <p class="form-actions"><button class="btn" type="submit">Comparar as duas análises marcadas</button>
+        <button class="btn btn-secondary" type="submit" formaction="/comparativo.pdf">Baixar comparativo (PDF)</button>
+        <span class="muted">A = antes, B = depois. Por padrão: a última contra a anterior. O PDF usa só análises reais, recalculadas com os critérios atuais.</span></p>
+      {% else %}
+      <p class="muted">São necessárias ao menos duas análises para comparar.</p>
+      {% endif %}
+    </form>
+  </section>
+  {% endif %}
+{% endif %}
+</main>
+{% endblock %}

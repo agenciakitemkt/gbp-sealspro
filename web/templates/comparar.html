@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% from "_macros.html" import icon %}
+{% block body %}
+<header class="topbar">
+  <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Auditor de Perfil <span class="brand-sub">Comparação</span></div>
+  <div class="tools">
+    {% if atual %}<a class="btn btn-secondary" href="/historico?local={{ atual.id | urlencode }}">Voltar ao histórico</a>{% endif %}
+  </div>
+</header>
+
+<main id="comparacao">
+{% if erro %}
+  <p class="notice error" role="alert">{{ icon("bad") }}<span>{{ erro }}</span></p>
+  <p><a href="/historico">Voltar ao histórico</a></p>
+{% else %}
+  {% set a = c.a %}{% set b = c.b %}{% set ov = c["items"].overall %}
+  <section class="head">
+    <div>
+      <h1>Comparação: {{ atual.title }}</h1>
+      <p class="muted">Análise Completa · {{ c["items"].changed | length }} item(ns) mudaram de nota ou status, {{ c["items"].unchanged | length }} sem mudança</p>
+    </div>
+    {% if a.kind == "real" and b.kind == "real" %}<a class="btn" href="/comparativo.pdf?a={{ a.id }}&amp;b={{ b.id }}">Baixar comparativo (PDF)</a>{% endif %}
+  </section>
+
+  {% if c.reevaluate %}
+  <p class="notice" role="note">{{ icon("fair") }}<span><strong>Notas reavaliadas com o motor atual.</strong> Calculadas agora, a partir dos brutos guardados; nada foi gravado no banco. As notas originais continuam como estavam.
+    <a href="/comparar?a={{ a.id }}&amp;b={{ b.id }}">Ver as notas guardadas</a></span></p>
+  {% elif c.versions_differ %}
+  <p class="notice" role="note">{{ icon("fair") }}<span><strong>As duas análises foram calculadas com versões diferentes do motor ou do config</strong> ({{ a | version_label }} e {{ b | version_label }}). Diferenças de nota podem vir das curvas, não do perfil.
+    <a href="/comparar?a={{ a.id }}&amp;b={{ b.id }}&amp;reavaliar=1">Reavaliar as duas com o motor atual</a> (calculado agora, não é gravado).</span></p>
+  {% endif %}
+  {% for n in c.notices %}<p class="notice" role="note">{{ icon("unavailable") }}<span>{{ n }}</span></p>{% endfor %}
+
+  <section class="card" aria-label="As duas análises">
+    <div class="pair">
+      {% for side, x, label in (("a", a, "A (antes)"), ("b", b, "B (depois)")) %}
+      <div class="pair-col">
+        <h2>{{ label }}</h2>
+        <p><time datetime="{{ x.analyzed_at }}">{{ x.analyzed_at | local_dt }}</time> · {{ x.kind | kind_label }}</p>
+        <p class="muted">Versão: {{ x | version_label }}{% if c.reevaluated[side] %} · reavaliada com o motor atual{% endif %}</p>
+        <p class="pair-score"><strong>{{ ov[side].score if ov[side].score is not none else "–" }}</strong><span class="muted"> de 100</span></p>
+        <p class="muted">Fraco {{ ov[side].bad }} · Razoável {{ ov[side].fair }} · Bom {{ ov[side].good }}{% if ov[side].unavailable %} · Indisponíveis {{ ov[side].unavailable }}{% endif %}</p>
+      </div>
+      {% endfor %}
+      <div class="pair-col pair-delta">
+        <h2>Diferença</h2>
+        <p class="pair-score"><strong>{% if ov.d_score is none %}–{% elif ov.d_score == 0 %}0{% else %}{{ "%+d" | format(ov.d_score) }}{% endif %}</strong><span class="muted"> pontos</span></p>
+        <p class="muted">Fraco {{ "%+d" | format(ov.d_bad or 0) }} · Razoável {{ "%+d" | format(ov.d_fair or 0) }} · Bom {{ "%+d" | format(ov.d_good or 0) }}</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="itens-titulo">
+    <h2 id="itens-titulo">Itens que mudaram</h2>
+    {% if not c["items"].changed %}
+      <p>Nenhum item mudou de nota ou de status entre as duas análises.</p>
+    {% else %}
+    <div class="table-wrap">
+    <table class="diff">
+      <thead><tr><th scope="col">Item</th><th scope="col" class="num">A</th><th scope="col" class="num">B</th><th scope="col" class="num">Diferença</th><th scope="col">Situação em A → em B</th></tr></thead>
+      <tbody>
+      {% for r in c["items"].changed %}
+      <tr>
+        <th scope="row">{{ r.title }}</th>
+        <td class="num"><span class="badge st-{{ r.a_status if r.a_status != 'ausente' else 'unavailable' }}">{{ r.a_score if r.a_score is not none else "–" }}</span></td>
+        <td class="num"><span class="badge st-{{ r.b_status if r.b_status != 'ausente' else 'unavailable' }}">{{ r.b_score if r.b_score is not none else "–" }}</span></td>
+        <td class="num"><strong>{% if r.delta is none %}{{ (r.a_status | status_label) if r.a_status != 'ausente' else 'novo' }} → {{ (r.b_status | status_label) if r.b_status != 'ausente' else 'removido' }}{% else %}{{ "%+d" | format(r.delta) }}{% endif %}</strong></td>
+        <td class="situation">{% if r.a %}{{ r.a.message | msg }}{% else %}–{% endif %}<br><span aria-hidden="true">→</span> {% if r.b %}{{ r.b.message | msg }}{% else %}–{% endif %}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+    {% if c["items"].unchanged %}
+    <details class="unchanged"><summary>{{ c["items"].unchanged | length }} item(ns) sem mudança</summary>
+      <ul>{% for r in c["items"].unchanged %}<li>{{ r.title }}: {{ r.a_score if r.a_score is not none else "–" }} ({{ r.a_status | status_label if r.a_status != 'ausente' else '—' }})</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+  </section>
+
+  <section class="card" aria-labelledby="dados-titulo">
+    <h2 id="dados-titulo">O que mudou nos dados do perfil</h2>
+    {% if c.data is none %}
+      <p class="muted">Sem os dados brutos das duas análises não dá para comparar os dados do perfil.</p>
+    {% else %}
+    <div class="table-wrap">
+    <table class="diff">
+      <thead><tr><th scope="col">Dado</th><th scope="col">A (antes)</th><th scope="col">B (depois)</th><th scope="col">Mudou?</th></tr></thead>
+      <tbody>
+      {% for r in c.data %}
+        {% if r.kind == "text" %}
+        <tr class="{{ 'changed' if r.changed else 'same' }}">
+          <th scope="row">{{ r.label }}</th>
+          {% if r.changed %}<td class="text-cell">{{ r.a or "—" }}</td><td class="text-cell">{{ r.b or "—" }}</td><td><span class="chg">Mudou</span></td>
+          {% else %}<td colspan="2" class="muted">sem mudança ({{ (r.a or "")|length }} caracteres)</td><td>—</td>{% endif %}
+        </tr>
+        {% else %}
+        <tr class="{{ 'changed' if r.changed else 'same' }}">
+          <th scope="row"><span class="muted grp">{{ r.group }}</span> {{ r.label }}</th>
+          <td>{% if r.kind == "date" %}{{ r.a | br_date }}{% elif r.kind == "list" %}{{ r.a | join(" · ") }}{% else %}{{ r.a if r.a is not none else "—" }}{% endif %}</td>
+          <td>{% if r.kind == "date" %}{{ r.b | br_date }}{% elif r.kind == "list" %}{{ r.b | join(" · ") }}{% else %}{{ r.b if r.b is not none else "—" }}{% endif %}</td>
+          <td>{% if r.changed %}<span class="chg">Mudou{% if r.delta is not none %} ({{ "%+g" | format(r.delta) }}){% elif r.delta_days is not none %} ({{ "%+d" | format(r.delta_days) }} dias){% endif %}</span>{% else %}—{% endif %}</td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="muted">Só contagens e datas, e o texto de nome e descrição. O texto das avaliações de clientes não é mostrado.</p>
+    {% endif %}
+  </section>
+{% endif %}
+</main>
+{% endblock %}
